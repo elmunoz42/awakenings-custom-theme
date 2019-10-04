@@ -838,4 +838,85 @@ function _cmk_display_pending_events(){
   }
 }
 
+//****************************** NOTE: CMK - Display Pending Events to administrator and business_administrator only.
+add_shortcode('cmk_display_orders_pending_payment', '_cmk_display_orders_pending_payment');
+function _cmk_get_pending_orders(){
+  $customer_orders = wc_get_orders( array(
+      'limit'    => -1,
+      'type'     => 'shop_order',
+      'status'   => 'pending'
+  ) );
+  // var_dump($customer_orders);
+  return $customer_orders;
+}
+
+function _cmk_display_orders_pending_payment(){
+  if( is_user_logged_in() ) {
+    $user = wp_get_current_user();
+    if (isset($user->roles) && is_array($user->roles)) {
+      $roles = ( array ) $user->roles;
+      if ( in_array( "administrator", $roles ) || in_array( "business_administrator", $roles ) ) {
+        $orders = _cmk_get_pending_orders();
+        if ( ! empty($orders) ) {
+          $output =   '
+          <table class="tg">
+          <tr>
+          <th class="tg-0lax">Order ID</th>
+          <th class="tg-0lax">Date Created</th>
+          <th class="tg-0lax">Customer</th>
+          <th class="tg-0lax">Client Email</th>
+          <th class="tg-0lax">Email Invoice</th>
+          </tr>';
+          // var_dump($orders);
+          foreach( $orders as $order ){
+            $user = get_user_by('ID', $order->get_customer_id());
+            $output .= '<tr>
+            <td class="tg-0lax"><a href="/wp-admin/post.php?post='. $order->get_id() . '&action=edit" target="_blank">'. $order->get_id() .' </a></td>
+            <td class="tg-0lax">'. date( 'Y F j, g:i a', $order->get_date_created ()->getOffsetTimestamp()) . '</td>
+            <td class="tg-0lax">';
+            if ($user) {
+              $output .=  $user->first_name . ' ' . $user->last_name . '</td>';
+              $output .= '<td class="tg-0lax"><a href="mailto:'. $user->user_email .'" target="_blank">'. $user->user_email. '</a></td>';
+            } else {
+
+              $output .= 'Guest </td>';
+              $output .= '<td class="tg-0lax">NO Email</td>';
+            }
+            $output .= '<td class="tg-0lax"><a href="/wp-admin/post.php?post='. $order->get_id() . '&action=edit" target="_blank">SEND INVOICE</a></td>';
+            $output .= '</tr>';
+
+          }
+          $output .= '</table>';
+          wp_reset_postdata();
+        } else {
+          $output = "<p> No orders pending payment at this time.</p>";
+        }
+
+        return $output;
+      }
+    }
+  }
+}
+
+
+
+// Iterating through each Order with pending status
+// foreach ( $customer_orders as $order ) {
+//
+//     // Going through each current customer order items
+//     foreach($order->get_items() as $item_id => $item_values){
+//         $product_id = $item_values['product_id']; // product ID
+//
+//         // Order Item meta data
+//         $item_meta_data = wc_get_order_item_meta( $item_id );
+//
+//         // Some output
+//         echo '<p>Line total for '.wc_get_order_item_meta( $item_id, '_line_total', true ).'</p><br>';
+//     }
+// }
+// $args = array(
+//     'status' => 'on-hold',
+// );
+// $orders = wc_get_orders( $args );
+
 ?>
