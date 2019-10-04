@@ -1,0 +1,318 @@
+/*
+Theme Name: Awakenings Enfold Child v1.2
+Description: A <a href='http://codex.wordpress.org/Child_Themes'>Child Theme</a> for the Enfold Wordpress Theme. If you plan to do a lot of file modifications we recommend to use this Theme instead of the original Theme. Updating wil be much easier then.
+Version: 1.0
+Author: Carlos Munoz Kampff
+Author URI: http://carlosmunozkampff.com
+Template: enfold
+*/
+
+/* --------------Add your own styles here:*/
+
+/* -------------------------------- Imports ---------------------------------*/
+
+/* -------------------------------- Typography -------------------------------*/
+
+/* ------------------------------- Nav Bar ----------------------------*/
+
+.title_container {
+	display: none;
+}
+@media only screen and (min-width: 1060px) {
+	#header_main .avia-menu-text {
+	font-size: 0.85rem;
+}
+}
+
+@media only screen and (min-width: 900px) and (max-width: 1100px) {
+	#header_main a {
+	padding-left: 8px;
+	padding-right: 8px;
+}
+}
+/************************************ Home Page ************************************/
+
+.product_list_widget img{
+	width: 100px !important;
+	margin-top: 0px;
+	float: left!important;
+}
+
+.cmk-woo-widget {
+	width: 50%; float: left;
+
+}
+.cmk-woo-widget .product-title {
+	font-size: 0.8em;
+}
+
+.cmk-woo-widget img {
+	height: 100px;
+	object-fit: cover;
+	object-position: 100% 0;
+}
+
+
+.product_list_widget span.product-title {
+	margin: 5px !important;
+	float: left !important;
+	list-style-position: inside;
+	color: black;
+}
+.product_list_widget .woocommerce-Price-amount {
+	display: none;
+}
+
+.product_list_widget .duration {
+	display: none;
+}
+
+.home .av-upcoming-event-image {
+	margin-right: 7px;
+
+}
+.home .av-upcoming-event-data h4{
+	font-size: 1em;
+	text-wrap: normal;
+}
+.home {}
+/************************************* Calendar Page *************************************/
+
+.tribe-bar-submit {
+	padding-top: 24px !important;
+}
+
+@media only screen and (max-width: 1206px) and (min-width: 1103px){
+	.tribe-bar-submit {
+	padding-top: 10px !important;
+}
+}
+.tribe-events-calendar .tribe-events-category-workshop {
+	background-color: rgba(0, 179, 0, 0.3) !important;
+}
+
+.tribe-events-calendar .tribe-events-category-regular-class {
+		background-color: rgba(75,169,200, 0.5) !important;
+}
+
+.tribe-events-calendar .tribe-events-category-sound-dance-event {
+    background-color: lightpink !important;
+}
+
+.tribe-events-category-regular-class h3 {
+
+	color: #3399cc !important;
+}
+
+.tribe-events-category-workshop h3 {
+
+	color: rgba(0, 179, 0, 0.6) !important;
+}
+
+.tribe-events-category-sound-dance-event h3 {
+	color: 	rgba(255,141,161,1) !important;
+}
+
+#tribe-bar-views-option-week {
+	display: none !important;
+}
+
+#tribe-bar-views-option-day {
+	display: none !important;
+}
+
+#tribe-bar-views-option-map {
+	display: none !important;
+}
+
+.page-id-2816 .avia-button {
+
+	margin-top: 20px;
+	margin-bottom: 20px;
+}
+
+/************************************* Attendee Event Confirmation List *************************************/
+
+.tribe-tickets li {
+	font-size: 0.9rem;
+	background-color: white;
+	padding: 10px 30px;
+	list-style: none;
+	margin-left: 0px;
+	border: 1px solid lightgrey;
+}
+
+.page-id-7669 .my-attendance-list {
+	margin-top: 60px !important;
+	margin-left: 0px;
+}
+
+/* Dashboard */
+nav.subscriber #change-avatar-personal-li {
+display: none;
+}
+
+#bppse-profile-link {
+display: none;
+}
+
+/************************************* General Dashboard *************************************/
+.my-attendance-list {
+	margin-top: 20px !important;
+	margin-left: 0px;
+}
+
+.cmk-dashboard-menu nav{
+	min-width: 100%;
+}
+
+.cmk-previous-therapists-widget li {
+	clear: none;
+}
+
+/* dashboard buttons */
+.woocommerce-MyAccount-navigation-link {
+	color: white !important;
+	background-color: #447f34 !important;
+}
+.woocommerce-MyAccount-navigation-link:hover {
+
+	background-color: #719430 !important;
+}
+
+.woocommerce-MyAccount-navigation-link a {
+	color: white  !important;
+}
+/************************************* Client Dashboard ****************************************/
+.page-id-3915 div.cmk-text-box {
+	background-color: white;
+	transform: translatey(20px);
+	padding: 15px;
+	border: 1px solid lightgray;
+}
+
+.page-id-3915 li.product{
+	min-width: 220px !important;
+	clear: none;
+}
+.page-id-3915 li.product h2 {
+	text-transform: none;
+	text-align: center;
+	font-weight: 900;
+	font-family: inherit;
+}
+
+.page-id-3915 .inner_product {
+	font-size: 0.9rem;
+	padding: 10px;
+	background-color: white;
+}
+
+
+.page-id-3915 li.product .inner_product_header {
+	margin-top: -80px;
+	min-height: 10px !important;
+}
+
+.page-id-3915 .wcpv-sold-by-loop {
+	display: none;
+}
+
+
+
+/************************************* Organizer Dashboard *************************************/
+.page-id-3902 div.cmk-text-box {
+	background-color: white;
+	transform: translatey(20px);
+	padding: 15px;
+	border: 1px solid lightgray;
+}
+
+.page-id-3902 li.product{
+	min-width: 220px !important;
+        clear: none;   
+}
+
+.page-id-3902 .inner_product {
+	font-size: 0.9rem;
+	padding: 10px;
+	background-color: white;
+}
+
+.page-id-3902 li.product .inner_product_header {
+	margin-top: -80px;
+	min-height: 10px !important;
+}
+.page-id-3902 li.product h2 {
+	text-transform: none;
+	text-align: center;
+	font-weight: 900;
+	font-family: inherit;
+}
+.page-id-3902 .wcpv-sold-by-loop {
+	display: none;
+}
+
+/************************************* Manage Payouts Page - Event Calendar *************************************/
+.cmk-payment-options-button {
+	padding-bottom: 70px;
+
+}
+
+
+/************************************* Profile Page - Buddypress *************************************/
+#buddypress #item-header-content {
+	margin-top: 70px;
+	padding-left: 0px;
+}
+#buddypress #item-header-avatar a{
+	margin-bottom: 0px;
+}
+
+#buddypress .item-meta {
+	display: none !important;
+}
+
+
+/************************************* Add New Event Form - Event Tribe*************************************/
+#cmk-events-form-dashboard-button {
+	position: relative;
+	transform: translatey(-170px)
+}
+.tribe-community-events header {
+	margin-top: 20px !important;
+}
+
+.cmk-form-calendar-msg {
+	background-color: lightblue;
+	padding: 20px;
+}
+
+/************************************* My Account Page - Woocommerce*************************************/
+@media only screen and (min-width: 768px) {
+	div.woocommerce-MyAccount-content {
+transform: translateY(-45px);
+	font-size: 1rem;
+}
+}
+
+/************************************* Footer *************************************/
+.cmk-footer-address {
+	font-size: 0.8rem;
+	text-align: right;
+}
+.cmk-footer-disclaimer {
+
+	line-height: 0.9rem;
+	font-size: 0.7rem;
+	padding: 5px 0px;
+}
+
+#footer {
+	padding: 0px !important;
+}
+
+
+#footer section{
+	margin: 0px !important;
+}
