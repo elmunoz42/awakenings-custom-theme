@@ -785,4 +785,57 @@ function _cmk_manage_users_button(){
     }
   }
 }
+
+//****************************** NOTE: CMK - Display Pending Events to administrator and business_administrator only.
+add_shortcode('cmk_display_pending_events', '_cmk_display_pending_events');
+function _cmk_get_pending_events(){
+  $args = array(
+    'post_type'=>array('tribe_events'),
+    'post_status' => 'pending'
+  );
+
+  $query = new WP_Query($args);
+  // var_dump($query);
+  return $query;
+}
+
+function _cmk_display_pending_events(){
+  if( is_user_logged_in() ) {
+    $user = wp_get_current_user();
+    if (isset($user->roles) && is_array($user->roles)) {
+      $roles = ( array ) $user->roles;
+      if ( in_array( "administrator", $roles ) || in_array( "business_administrator", $roles ) ) {
+        $the_query = _cmk_get_pending_events();
+        if ( $the_query->have_posts() ) {
+          $output =   '
+          <table class="tg">
+          <tr>
+          <th class="tg-0lax">Event Name</th>
+          <th class="tg-0lax">Submission Date</th>
+          <th class="tg-0lax">User</th>
+          <th class="tg-0lax">Create Invoice</th>
+          <th class="tg-0lax">Publish Event</th>
+          </tr>';
+          while ( $the_query->have_posts() ) {
+            $the_query->the_post();
+            $output .= '<tr>
+            <td class="tg-0lax"><a href="/wp-admin/post.php?post='. get_the_ID() . '&action=edit&classic-editor=1" target="_blank">'. get_the_title() .' </a></td>
+            <td class="tg-0lax">'. get_the_date() . '</td>
+            <td class="tg-0lax">'. get_the_author() . '</td>
+            <td class="tg-0lax"><a href="/wp-admin/post-new.php?post_type=shop_order" target="_blank">CREATE INVOICE</a></td>
+            <td class="tg-0lax"><a href="/wp-admin/post.php?post='. get_the_ID() . '&action=edit&classic-editor=1" target="_blank">PUBLISH</a></td>
+            </tr>';
+          }
+          $output .= '</table>';
+          wp_reset_postdata();
+        } else {
+          $output = "<p> No pending events at this time.</p>";
+        }
+
+        return $output;
+      }
+    }
+  }
+}
+
 ?>
