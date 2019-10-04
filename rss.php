@@ -4,7 +4,7 @@
  */
 // $postCount = 5; // The number of posts to show in the feed
 // $posts = query_posts('showposts=' . $postCount);
-// NOTE: IMPORTANT Tribe events category ids will be different in different installations ADJUST
+// NOTE: IMPORTANT Tribe events categories with the parent "public" only will display.
 
 $tax_query = array(
   array(
