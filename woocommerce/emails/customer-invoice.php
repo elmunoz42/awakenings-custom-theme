@@ -35,7 +35,7 @@ do_action( 'woocommerce_email_header', $email_heading, $email ); ?>
 	printf(
 		wp_kses(
 			/* translators: %1$s Site title, %2$s Order pay link */
-			__( 'An order has been created for you on %1$s. Your invoice is below, with a link to make payment when you’re ready: %2$s', 'woocommerce' ),
+			__( 'We have approved your event at the %1$s. Your invoice for event is attached below with the Awakenings Studio Rental Agreement. Please make sure you read and understand the agreement as that is necessary for booking the space. Here\'s a link to make payment when you’re ready and secure your date in our calendar: %2$s. ', 'woocommerce' ),
 			array(
 				'a' => array(
 					'href' => array(),

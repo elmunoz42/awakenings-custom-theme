@@ -737,7 +737,7 @@ function _cmk_users_emails(){
           foreach ( $organizers as $user ) {
             $output .= esc_html( $user->user_email ) . ', ';
           }
-          $output .= '">Message All Event Organizers</a></button>';
+          $output .= '">Message All Event Organizers</a></button><br>';
         }
         return $output;
       }
@@ -786,6 +786,26 @@ function _cmk_manage_users_button(){
   }
 }
 
+
+//****************************** NOTE: From Woocommerce github allow custom queries
+/**
+ * Handle a custom 'customvar' query var to get orders with the 'customvar' meta.
+ * @param array $query - Args for WP_Query.
+ * @param array $query_vars - Query vars from WC_Order_Query.
+ * @return array modified $query
+ */
+function handle_custom_query_var( $query, $query_vars ) {
+	if ( ! empty( $query_vars['event_id'] ) ) {
+		$query['meta_query'][] = array(
+			'key' => 'event_id',
+			'value' => esc_attr( $query_vars['event_id'] ),
+		);
+	}
+
+	return $query;
+}
+add_filter( 'woocommerce_order_data_store_cpt_get_orders_query', 'handle_custom_query_var', 10, 2 );
+
 //****************************** NOTE: CMK - Display Pending Events to administrator and business_administrator only.
 add_shortcode('cmk_display_pending_events', '_cmk_display_pending_events');
 function _cmk_get_pending_events(){
@@ -799,6 +819,29 @@ function _cmk_get_pending_events(){
   return $query;
 }
 
+function _cmk_get_payment_status($this_event_id){
+  $event_orders = wc_get_orders( array( 'event_id' => $this_event_id ) );
+  // var_dump($this_event_id);
+  if (!empty($event_orders) ) {
+    $output = '';
+    $payment_count = 0;
+    $payed_count = 0;
+    foreach ($event_orders as $event_order) {
+      $payment_count ++;
+      if ($event_order->get_status()=='completed'){
+        $output .=  '<a href="'. $event_order->get_edit_order_url() . '" target="_blank">' . $event_order->get_status(). '</a> | ';
+        $payed_count ++;
+      } else {
+        $output .= '<a href="'. $event_order->get_edit_order_url() . '" target="_blank">' . $event_order->get_status(). '</a> | ';
+      }
+    }
+  } else {
+    $output = 'no connected orders';
+  }
+  // return $output;
+  return $output . '(' . $payed_count . '/' . $payment_count . ')';
+}
+
 function _cmk_display_pending_events(){
   if( is_user_logged_in() ) {
     $user = wp_get_current_user();
@@ -810,18 +853,23 @@ function _cmk_display_pending_events(){
           $output =   '
           <table class="tg">
           <tr>
-          <th class="tg-0lax">Event Name</th>
+          <th class="tg-0lax">Event Name / Link</th>
+          <th class="tg-0lax">Event Id</th>
           <th class="tg-0lax">Submission Date</th>
           <th class="tg-0lax">User</th>
+          <th class="tg-0lax">Payment Status</th>
           <th class="tg-0lax">Create Invoice</th>
           <th class="tg-0lax">Publish Event</th>
           </tr>';
           while ( $the_query->have_posts() ) {
             $the_query->the_post();
+            $event_id = get_the_ID();
             $output .= '<tr>
             <td class="tg-0lax"><a href="/wp-admin/post.php?post='. get_the_ID() . '&action=edit&classic-editor=1" target="_blank">'. get_the_title() .' </a></td>
+            <td class="tg-0lax">'. get_the_ID() . '</td>
             <td class="tg-0lax">'. get_the_date() . '</td>
             <td class="tg-0lax">'. get_the_author() . '</td>
+            <td class="tg-0lax">'. _cmk_get_payment_status($event_id) . '</td>
             <td class="tg-0lax"><a href="/wp-admin/post-new.php?post_type=shop_order" target="_blank">CREATE INVOICE</a></td>
             <td class="tg-0lax"><a href="/wp-admin/post.php?post='. get_the_ID() . '&action=edit&classic-editor=1" target="_blank">PUBLISH</a></td>
             </tr>';
@@ -838,7 +886,7 @@ function _cmk_display_pending_events(){
   }
 }
 
-//****************************** NOTE: CMK - Display Pending Events to administrator and business_administrator only.
+//****************************** NOTE: CMK - Display Pending Orders to administrator and business_administrator only.
 add_shortcode('cmk_display_orders_pending_payment', '_cmk_display_orders_pending_payment');
 function _cmk_get_pending_orders(){
   $customer_orders = wc_get_orders( array(
@@ -898,25 +946,164 @@ function _cmk_display_orders_pending_payment(){
   }
 }
 
+//******************************************* NOTE: Add custom fields to Order meta
+
+add_action( 'woocommerce_admin_order_data_after_order_details', 'misha_editable_order_meta_general' );
 
 
-// Iterating through each Order with pending status
-// foreach ( $customer_orders as $order ) {
-//
-//     // Going through each current customer order items
-//     foreach($order->get_items() as $item_id => $item_values){
-//         $product_id = $item_values['product_id']; // product ID
-//
-//         // Order Item meta data
-//         $item_meta_data = wc_get_order_item_meta( $item_id );
-//
-//         // Some output
-//         echo '<p>Line total for '.wc_get_order_item_meta( $item_id, '_line_total', true ).'</p><br>';
-//     }
-// }
-// $args = array(
-//     'status' => 'on-hold',
-// );
-// $orders = wc_get_orders( $args );
+function misha_editable_order_meta_general( $order ){
+  ?>
+
+		<br class="clear" />
+		<h4>Order Description<a href="#" class="edit_address">Edit</a></h4>
+		<?php
+			/*
+			 * get all the meta data values we need
+			 */
+			$is_event = get_post_meta( $order->get_id(), 'is_event', true );
+      $is_deposit = get_post_meta( $order->get_id(), 'is_deposit', true );
+			$event_name = get_post_meta( $order->get_id(), 'event_name', true );
+			$event_id = get_post_meta( $order->get_id(), 'event_id', true );
+			$event_date = get_post_meta( $order->get_id(), 'event_date', true );
+			$invoice_notes = get_post_meta( $order->get_id(), 'invoice_notes', true );
+		?>
+		<div class="address">
+			<p><strong>Is this a deposit?</strong><?php echo $is_deposit ? 'Yes' : 'No' ?></p>
+			<p><strong>Is this for an event?</strong><?php echo $is_event ? 'Yes' : 'No' ?></p>
+			<?php
+				// we show the rest fields in this column only if this order is marked as a gift
+				if( $is_event ) :
+				?>
+					<p><strong>Event Name:</strong> <?php echo $event_name ?></p>
+          <p><strong>Event ID:</strong> <?php echo $event_id ?></p>
+					<p><strong>Event Date:</strong> <?php echo $event_date ?></p>
+					<p><strong>Invoice Notes:</strong> <?php echo wpautop( $invoice_notes ) ?></p>
+				<?php
+				endif;
+			?>
+		</div>
+		<div class="edit_address"><?php
+
+    woocommerce_wp_radio( array(
+      'id' => 'is_event',
+      'label' => 'Is this an event invoice?',
+      'value' => $is_event,
+      'options' => array(
+        '' => 'No',
+        '1' => 'Yes'
+      ),
+      'style' => 'width:16px', // required for checkboxes and radio buttons
+      'wrapper_class' => 'form-field-wide' // always add this class
+    ) );
+    woocommerce_wp_radio( array(
+      'id' => 'is_deposit',
+      'label' => 'Is this a deposit?',
+      'value' => $is_deposit,
+      'options' => array(
+        '' => 'No',
+        '1' => 'Yes'
+      ),
+      'style' => 'width:16px', // required for checkboxes and radio buttons
+      'wrapper_class' => 'form-field-wide' // always add this class
+    ) );
+    woocommerce_wp_text_input( array(
+      'id' => 'event_name',
+      'label' => 'Event name:',
+      'value' => $event_name,
+      'wrapper_class' => 'form-field-wide'
+    ) );
+    woocommerce_wp_text_input( array(
+      'id' => 'event_id',
+      'label' => 'Event id:',
+      'value' => $event_id,
+      'wrapper_class' => 'form-field-wide'
+    ) );
+    woocommerce_wp_text_input( array(
+      'id' => 'event_date',
+      'label' => 'Event date',
+      'wrapper_class' => 'form-field-wide',
+      'class' => 'date-picker',
+      'style' => 'width:100%',
+      'value' => $event_date,
+      'description' => 'Date of the event.'
+    ) );
+    woocommerce_wp_textarea_input( array(
+      'id' => 'invoice_notes',
+      'label' => 'Invoice Notes:',
+      'rows' => 6,
+      'value' => $invoice_notes,
+      'wrapper_class' => 'form-field-wide'
+    ) );
+
+		?></div>
+
+
+<?php
+}
+
+add_action( 'woocommerce_process_shop_order_meta', 'misha_save_general_details' );
+
+function misha_save_general_details( $ord_id ){
+	update_post_meta( $ord_id, 'is_event', wc_clean( $_POST[ 'is_event' ] ) );
+	update_post_meta( $ord_id, 'is_deposit', wc_clean( $_POST[ 'is_deposit' ] ) );
+	update_post_meta( $ord_id, 'event_name', wc_clean( $_POST[ 'event_name' ] ) );
+	update_post_meta( $ord_id, 'event_id', wc_clean( $_POST[ 'event_id' ] ) );
+	update_post_meta( $ord_id, 'event_date', wc_clean( $_POST[ 'event_date' ] ) );
+	update_post_meta( $ord_id, 'invoice_notes', wc_sanitize_textarea( $_POST[ 'invoice_notes' ] ) );
+	// wc_clean() and wc_sanitize_textarea() are WooCommerce sanitization functions
+}
+
+add_action( 'woocommerce_email_order_meta', 'misha_add_email_order_meta', 10, 3 );
+/*
+ * @param $order_obj Order Object
+ * @param $sent_to_admin If this email is for administrator or for a customer
+ * @param $plain_text HTML or Plain text (can be configured in WooCommerce > Settings > Emails)
+ */
+function misha_add_email_order_meta( $order_obj, $sent_to_admin, $plain_text ){
+
+	// this order meta checks if order is marked as a gift
+	$is_event = get_post_meta( $order_obj->get_order_number(), 'is_event', true );
+
+	// we won't display anything if it is not a gift
+	if( empty( $is_event ) )
+		return;
+
+	// ok, if it is the gift order, get all the other fields
+	$is_deposit = get_post_meta( $order_obj->get_order_number(), 'is_deposit', true );
+	$event_name = get_post_meta( $order_obj->get_order_number(), 'event_name', true );
+	$event_id = get_post_meta( $order_obj->get_order_number(), 'event_id', true );
+	$event_date = get_post_meta( $order_obj->get_order_number(), 'event_date', true );
+	$invoice_notes = get_post_meta( $order_obj->get_order_number(), 'invoice_notes', true );
+
+
+	// ok, we will add the separate version for plaintext emails
+	if ( $plain_text === false ) {
+
+		// you shouldn't have to worry about inline styles, WooCommerce adds them itself depending on the theme you use
+		echo '<h2>Event Information</h2>
+		<ul>';
+    if ($is_deposit==1) {
+      echo '<li><strong>This is a deposit</strong> Yes</li>';
+    } else {
+      echo '<li><strong>This is a deposit</strong> No</li>';
+    }
+		echo '<li><strong>Event name:</strong> ' . $event_name . '</li>
+    <li><strong>Event ID:</strong> ' . $event_id . '</li>
+    <li><strong>Event name:</strong> ' . $event_date . '</li>
+		<li><strong>Invoice Notes:</strong> ' . wpautop( $invoice_notes ) . '</li>
+		</ul>';
+
+	} else {
+
+		echo "GIFT INFORMATION\n
+		Is event: Yes
+		Event name: $event_name
+    Event id: $event_id
+		Event date: $event_date
+		Invoice Notes: $invoice_notes";
+
+	}
+
+}
 
 ?>
