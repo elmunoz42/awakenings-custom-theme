@@ -340,12 +340,12 @@ function cmk_get_dashboard_url_button() {
 //*********************** NOTE: CMK - Events Calendar - Add Event List add back to dashboard
 add_action('tribe_community_events_before_list_navigation', 'cmk_add_dashboard_url_button_2', 100);
 function cmk_add_dashboard_url_button_2() {
-	echo '<nav class="woocommerce-MyAccount-navigation" id="cmk-events-list-dashboard-button" style="margin-bottom: 0px;"><ul><li class="woocommerce-MyAccount-navigation-link " style="float: left;"><a href="' . cmk_get_dashboard_url() . '">Back to Your Dashboard</a></li></ul></nav>';
+	echo '<nav class="woocommerce-MyAccount-navigation" id="cmk-events-list-dashboard-button" style="margin-bottom: 0px;"><ul><li class="woocommerce-MyAccount-navigation-link " style="float: left;"><a href="' . cmk_get_dashboard_url() . '">Back to Your Dashboard</a></li></ul></nav><ul><li ><a href="/events-with-dashboard-button/" target="_blank">Check the Events Calendar</a></li><li ><a href="/events/community/payment-options" target="_blank">Manage Disbursement</a></li></ul>';
 }
 
 //************************* NOTE: CMK - Events Calendar - Add Dashboard button to Payment Options Page:
 // NOTE CSS HIDES tribe_ct_payment_options_nav
-add_action( 'tribe_ct_before_the_payment_options', 'cmk_add_dashboard_url_button_3');
+add_action( 'tribe_community_tickets_before_the_payment_options', 'cmk_add_dashboard_url_button_3');
 function cmk_add_dashboard_url_button_3() {
 	echo '<div class="cmk-payment-options-button"><nav class="woocommerce-MyAccount-navigation" ><ul><li class="woocommerce-MyAccount-navigation-link " style="float: left;"><a href="' . cmk_get_dashboard_url() . '">Back to Your Dashboard</a></li></ul></nav></div><style>.tribe-menu-wrapper { display: none; }</style>';
 }
