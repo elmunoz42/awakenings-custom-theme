@@ -588,7 +588,7 @@ function wpshout_save_post_if_submitted() {
     $post = array(
         'post_title'    => $_POST['title'],
         'post_content'  => $_POST['content'],
-        'post_category' => array('articles-by-our-therapists'),
+        'post_category' => array(86),
         'tags_input'    => $_POST['post_tags'],
         'post_status'   => 'publish',   // Could be: draft
         'post_type' 	=> 'post' // Could be: `page` or your CPT
@@ -744,7 +744,7 @@ function cmk_save_room_opening_post_if_submitted() {
         'post_title'    => $_POST['title'],
         'post_content'  => $_POST['content'],
         'tags_input'    => $_POST['post_tags'],
-				'post_category' => array('room-openings'),
+				'post_category' => array(119),
         'post_status'   => 'publish',   // Could be: draft
         'post_type' 	=> 'post' // Could be: `page` or your CPT
     );
