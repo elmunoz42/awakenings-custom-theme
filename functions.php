@@ -510,27 +510,41 @@ function _wpshout_frontend_post() {
 		</nav></div>
 		<hr>
 		<div class="">
-			<h3>Create an Article</h3>
+			<h3>Publish an Article</h3>
 		</div>
 		<div id="postbox">
-			<form id="new_post" name="new_post" method="post">
+			<form id="new_post" name="new_post" method="post" enctype="multipart/form-data">
 
 				<p><label for="title">Title</label><br />
 					<input type="text" id="title" value="" tabindex="1" size="20" name="title" />
 				</p>
 
 				<p>
-					<label for="content">Post Content</label><br />
-					<textarea id="content" tabindex="3" name="content" cols="50" rows="6"></textarea>
+					<label for="content">Post Content</label>
+
+          <?php
+          wp_enqueue_media();
+          wp_editor( '', 'content', $settings = array(
+            'textarea_name' => 'content',
+            'textarea_rows' => '16',
+            'media_buttons' => false,
+            'tinymce'       => true,
+            'quicktags'     => array('buttons'=>'link,img'),
+            )
+          );
+         ?>
 				</p>
 
-				<p><?php wp_dropdown_categories( 'show_count=1&hierarchical=1' ); ?></p>
+				<!-- <p>?php wp_dropdown_categories( 'show_count=1&hierarchical=1' ); ?</p> -->
 
 				<p><label for="post_tags">Tags</label>
 
 					<input type="text" value="" tabindex="5" size="16" name="post_tags" id="post_tags" /></p>
 
-					<!-- <input type="file" name="thumbnail_upload" id="thumbnail_upload"/> -->
+          <p><label for="title">Post Featured Image:</label>
+
+            <input type="file" class="form-control" id="thumbnail" name="thumbnail">
+          </p>
 
 					<?php wp_nonce_field( 'wps-frontend-post' ); ?>
 
@@ -541,13 +555,12 @@ function _wpshout_frontend_post() {
 			<?php
 		}
 		else {
-			echo 'Please <a href="/login" target="_blank">login</a> to view this page.';
+			echo 'Please <a href="/?root" target="_blank">login</a> to view this page.';
 		}
 	}
 
 
 //***************** Part 2 backend
-
 //  Save Post
 function wpshout_save_post_if_submitted() {
     // Stop running function if form wasn't submitted
@@ -575,12 +588,14 @@ function wpshout_save_post_if_submitted() {
     $post = array(
         'post_title'    => $_POST['title'],
         'post_content'  => $_POST['content'],
-        'post_category' => array($_POST['cat']),
+        'post_category' => array('articles-by-our-therapists'),
         'tags_input'    => $_POST['post_tags'],
         'post_status'   => 'publish',   // Could be: draft
         'post_type' 	=> 'post' // Could be: `page` or your CPT
     );
     $pid = wp_insert_post($post);
+
+    cmk_attach_image($pid);
 
 		$link = get_permalink( $pid );
 		echo '<div class="cmk-article-published-notice" style="padding: 30px; margin: 10px 0px; background-color: lightgray;">';
@@ -591,7 +606,7 @@ function wpshout_save_post_if_submitted() {
 
 }
 
-//********************************** NOTE: CMK - Shortcode for front end post submission
+//********************************** NOTE: CMK - Shortcode for front end room opening post submission
 // Resource: https://wpshout.com/wordpress-submit-posts-from-frontend/
 // PART 1 front end
 add_shortcode( 'cmk_frontend_room_opening_post', '_cmk_frontend_room_opening_post' );
@@ -611,25 +626,40 @@ function _cmk_frontend_room_opening_post() {
 		<hr>
 		<div class="">
 			<h3>Create a Room Opening Post</h3>
-			<h5>Your room opening post will be published on the front page. Make sure to add all the pertinent information.</h5>
+			<h5>Your room opening post will be published on the front page. Make sure to add all the pertinent information you can also upload an image (recommended).</h5>
 		</div>
 		<div id="postbox">
-			<form id="new_post" name="new_post" method="post">
+			<form id="new_post" name="new_post" method="post" enctype="multipart/form-data">
 
 				<p><label for="title">Title</label><br />
 					<input type="text" id="title" value="" tabindex="1" size="20" name="title" />
 				</p>
 
-				<p>
-					<label for="content">Post Content</label><br />
-					<textarea id="content" tabindex="3" name="content" cols="50" rows="6"></textarea>
+        <p>
+					<label for="content">Post Content</label>
+
+          <?php
+          wp_enqueue_media();
+          wp_editor( '', 'content', $settings = array(
+            'textarea_name' => 'content',
+            'textarea_rows' => '10',
+            'media_buttons' => false,
+            'tinymce'       => true,
+            'quicktags'     => array('buttons'=>'link,img'),
+            )
+          );
+         ?>
 				</p>
 
 				<p><label for="post_tags">Tags</label>
 
 					<input type="text" value="" tabindex="5" size="16" name="post_tags" id="post_tags" /></p>
 
-					<!-- <input type="file" name="thumbnail_upload" id="thumbnail_upload"/> -->
+        <p><label for="title">Post Featured Image:</label>
+
+          <input type="file" class="form-control" id="thumbnail" name="thumbnail">
+        </p>
+
 
 					<?php wp_nonce_field( 'wps-frontend-post' ); ?>
 
@@ -640,14 +670,53 @@ function _cmk_frontend_room_opening_post() {
 			<?php
 		}
 		else {
-			echo 'Please <a href="/login" target="_blank">login</a> to view this page.';
+			echo 'Please <a href="/?root" target="_blank">login</a> to view this page.';
 		}
 	}
 
 
 //***************** Part 2 backend
+// NOTE: atach image
+function cmk_attach_image($post_id) {
 
-//  Save Portfolio Post
+
+  if (!function_exists('wp_generate_attachment_metadata')){
+
+    require_once(ABSPATH . "wp-admin" . '/includes/image.php');
+
+    require_once(ABSPATH . "wp-admin" . '/includes/file.php');
+
+    require_once(ABSPATH . "wp-admin" . '/includes/media.php');
+
+  }
+
+  if ($_FILES) {
+
+    foreach ($_FILES as $file => $array) {
+
+      if ($_FILES[$file]['error'] !== UPLOAD_ERR_OK) {
+
+        return "upload error : " . $_FILES[$file]['error'];
+
+      }
+
+      $attach_id = media_handle_upload( $file, $post_id );
+
+    }
+
+    if ($attach_id > 0){
+
+      //and if you want to set that image as Post then use:
+
+      update_post_meta($post_id,'_thumbnail_id',$attach_id);
+
+    }
+  }
+
+
+}
+
+//  NOTE: Save Portfolio Post
 function cmk_save_room_opening_post_if_submitted() {
     // Stop running function if form wasn't submitted
     if ( !isset($_POST['title']) ) {
@@ -680,6 +749,8 @@ function cmk_save_room_opening_post_if_submitted() {
         'post_type' 	=> 'post' // Could be: `page` or your CPT
     );
     $pid = wp_insert_post($post);
+
+    cmk_attach_image($pid);
 
 		$link = get_permalink( $pid );
 		echo '<div class="cmk-article-published-notice" style="padding: 30px; margin: 10px 0px; background-color: lightgray;">';
