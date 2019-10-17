@@ -70,10 +70,6 @@
 					<th><?php _e( 'Order Date:', 'woocommerce-pdf-invoices-packing-slips' ); ?></th>
 					<td><?php $this->order_date(); ?></td>
 				</tr>
-				<tr class="payment-method">
-					<th><?php _e( 'Payment Method:', 'woocommerce-pdf-invoices-packing-slips' ); ?></th>
-					<td><?php $this->payment_method(); ?></td>
-				</tr>
 				<?php do_action( 'wpo_wcpdf_after_order_data', $this->type, $this->order ); ?>
 			</table>
 		</td>
@@ -143,21 +139,13 @@
 <br><br>
 <hr>
 <br><br>
-<div>
-	<h2>AWAKENINGS STUDIO RENTAL AGREEMENT</h2>
-	<span>
-		<p>Awakenings hereby leases to Tenant use of the Awakenings Studio (hereinafter called “studio”) located at 1016 SE 12th Ave, Portland, OR 97214 during the dates and times stipulated for which Tenant will pay the designated fee according to the following Terms and Conditions:</p>
-		<p>1. Payment and Termination: Tenant will pay 30% of the fee to secure this reservation and the remaining balance at least 30 days prior to the event (unless the event is less than 30 days out as of the making of this agreement, in which case the entire balance is due to secure the reservation). If the reservation is for an ongoing series, then tenant shall pay the designated deposit to secure the reservation and pay the designated monthly amount each month during the course of the series. This agreement may be cancelled with written notice. If notice is provided at least 30 days before the event, the rental fee will be returned minus thirty percent (30%) of the total rental price. The rental fee(s) shall be paid in person, by electronic payment, or mailed to 1016 SE 12th Avenue, Portland, OR 97214 in the form of a personal or cashier’s check or money order made to “Awakenings.”</p>
-		<p>2. Insurance and Indemnity: Tenant hereby indemnifies Awakenings from liability arising from Tenant’s use of the premises. Tenant does not indemnify Awakenings from liability related to general conditions of space or ground. If Tenant carries insurance, Tenant shall name Awakenings as additional insured on their insurance policy. Tenant and Awakenings shall comply with all municipal, state and federal statutes, ordinances and requirements in place now or in the future, regarding use of the property.</p>
-		<p>3. Courtesy to Therapists: Tenant understands that Awakenings is a wellness community with active sessions throughout the week and weekends. To reduce impacts on clients, Tenant shall ask participants to not congregate near offices and to maintain a respectful noise level.</p>
-		<p>4. Use and Upkeep of Premises: Tenant understands the kitchen is available for all community members and that therapists and clients use that space. Tenant may also use the kitchen and dishes during breaks and to prepare food, get water or tea and to store items in the fridge. Tenant shall maintain the kitchen and studio in good condition at all times and shall clean any mess created by participants in the studio and kitchen to the condition in which they were found.</p>
-		<p>5. Access Hours and Commitment to Vacate: Unless otherwise stipulated, tenant may have access to the event space 15 minutes before their start time in order to set up and commits to being out of the event space (and the space cleaned to the condition Tenant found it) for the next user no later than 15 minutes after the end of their agreed time.</p>
-		<p>6. Disputes: In case of dispute, the parties agree to mediation by a third party agreeable to both. If not possible, parties waive the right to trial by jury and agree to submit to the personal jurisdiction and venue of a court of subject matter jurisdiction located in Multnomah County, Oregon. No action may be brought if more than one year after the cause of action giving rise thereto has elapsed. The prevailing party in any action brought for the recovery of rent, possession of premises or for damages to premises shall be awarded costs in connection therewith, including by not limited to reasonable attorney’s fees.</p>
-		<p>7. Severability: If any provision of this Agreement is deemed null and void, such determination will not impact any other provision of this Agreement, and the remainder will remain in full force and effect.</p>
-		<p>8. Additional Terms. Any additional terms listed with this reservation shall be incorporated into this contract.</p>
+<?php
 
-	</span>
-</div>
+if ($this->order->get_meta('include_contract')==1) {
+	echo $this->order->get_meta('contract_language');
+}
+
+?>
 
 </div>
 

@@ -12,7 +12,10 @@ Template: enfold
 /* -------------------------------- Imports ---------------------------------*/
 
 /* -------------------------------- Typography -------------------------------*/
-
+.cmk-small-text {
+	font-size: 0.85em;
+	line-height: 1.5em;
+}
 /* ------------------------------- Nav Bar ----------------------------*/
 
 .title_container {
@@ -30,6 +33,46 @@ Template: enfold
 	padding-right: 8px;
 }
 }
+
+
+#header_main img {
+	margin-top: 10px;
+}
+
+.header-scrolled .logo > a > img { height: 30px; }
+
+#header_main {
+	border-color: #23461a;
+}
+.title_container {
+	display: none;
+}
+@media only screen and (min-width: 1160px) {
+	#header_main .avia-menu-text {
+	font-size: 0.85rem;
+}
+}
+
+@media only screen and (min-width: 900px) and (max-width: 1100px) {
+	#header_main a {
+	padding-left: 8px;
+	padding-right: 8px;
+}
+}
+
+
+/* Sliders */
+
+.page-id-23734 #full_slider_1{
+	max-width: 1100px;
+	margin: 0 auto;
+}
+
+/* Slider background */
+.page-id-23734 #main {
+		background-color: #2d2c2c;
+}
+
 /************************************ Home Page ************************************/
 
 .product_list_widget img{
@@ -75,7 +118,7 @@ Template: enfold
 	font-size: 1em;
 	text-wrap: normal;
 }
-.home {}
+
 /************************************* Calendar Page *************************************/
 
 .tribe-bar-submit {
@@ -230,7 +273,7 @@ display: none;
 
 .page-id-3902 li.product{
 	min-width: 220px !important;
-        clear: none;   
+        clear: none;
 }
 
 .page-id-3902 .inner_product {
@@ -294,6 +337,12 @@ display: none;
 transform: translateY(-45px);
 	font-size: 1rem;
 }
+}
+
+/*************************************** Articles Page ****************************/
+.wp-post-image {
+	max-width: 400px;
+	margin: 10px auto;
 }
 
 /************************************* Footer *************************************/

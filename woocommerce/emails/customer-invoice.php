@@ -35,7 +35,21 @@ do_action( 'woocommerce_email_header', $email_heading, $email ); ?>
 	printf(
 		wp_kses(
 			/* translators: %1$s Site title, %2$s Order pay link */
-			__( 'We have approved your event at the %1$s. Your invoice for event is attached below with the Awakenings Studio Rental Agreement. Please make sure you read and understand the agreement as that is necessary for booking the space. Here\'s a link to make payment when you’re ready and secure your date in our calendar: %2$s. ', 'woocommerce' ),
+			__( 'We have approved your event at the %1$s. Your invoice for this event is attached below with the Awakenings Studio Rental Agreement. Please make sure you read and understand the agreement as that is necessary for booking the space.
+				 Please make the required payments as soon as you can so that we can confirm your event on our calendar.  Until we receive the required payment, your event will remain tentative and could be bumped if we do not hear back from you soon. You understand that returning the required payment secures your event and represents your agreement to the contract below. For your convenience, you can approve your contract and pay online at the link below.
+
+				 %2$s.
+
+				 Also, if you have not done so, please use this link to provide an event description for our calendar.  We have found that events get much more attention and interest when they include a description and an image.  You can also activate registration management for your event. This will provide a registration box for participants to RSVP or buy tickets for the event. You can find your event online at:
+
+				ADD LINK HERE!!!
+
+				Thanks for supporting our wellness community with your great events and energy.  It is a pleasure to be able to host your activities at Awakenings!
+
+				With warmth,
+
+
+				 %2$s. ', 'woocommerce' ),
 			array(
 				'a' => array(
 					'href' => array(),
@@ -85,7 +99,7 @@ do_action( 'woocommerce_email_customer_details', $order, $sent_to_admin, $plain_
 
 ?>
 <p>
-<?php esc_html_e( 'Thanks for reading.', 'woocommerce' ); ?>
+
 </p>
 <?php
 

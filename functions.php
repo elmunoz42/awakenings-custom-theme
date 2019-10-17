@@ -886,17 +886,19 @@ function _cmk_get_pending_events(){
   );
 
   $query = new WP_Query($args);
+  wp_reset_postdata();
   // var_dump($query);
   return $query;
 }
 
 function _cmk_get_payment_status($this_event_id){
   $event_orders = wc_get_orders( array( 'event_id' => $this_event_id ) );
-  // var_dump($this_event_id);
+  $activated = False;
+  $payment_count = 0;
+  $payed_count = 0;
   if (!empty($event_orders) ) {
     $output = '';
-    $payment_count = 0;
-    $payed_count = 0;
+
     foreach ($event_orders as $event_order) {
       $payment_count ++;
       if ($event_order->get_status()=='completed'){
@@ -909,8 +911,35 @@ function _cmk_get_payment_status($this_event_id){
   } else {
     $output = 'no connected orders';
   }
-  // return $output;
-  return $output . '(' . $payed_count . '/' . $payment_count . ')';
+
+  // NOTE: IMPORTANT - IF $payed_count = $payment_count update EVENT TO ACTIVE!!!
+  // NOTE: DO WE NEED TO HOOK INTO add_action('tribe_events_update_meta','NAME OF A FUNCTION WE CREATE', 10,3)
+  // see https://wordpress.stackexchange.com/questions/348671/create-post-and-update-in-the-same-flow
+  if ($payment_count) {
+    // NOTE: Getting error event is not updating to scheduled and this notice appears: Notice: Trying to get property 'public' of non-object in D:\D-Drive-Files\Awakenings\Awakenings-Local-version3\wp-includes\capabilities.php on line 239
+    if ($payed_count==$payment_count){
+      // NOTE THIS WAS FROM API https://github.com/crowdfavorite-mirrors/wp-the-events-calendar/blob/master/lib/tribe-event-api.class.php
+       // eventUpdate($this_event_id, array(
+      //   'post_status'   =>  'scheduled'
+      // ));
+
+      // NOTE this was recommended for updating content but it seems that for scheduling something needs to happen.
+      tribe_update_event($this_event_id, array(
+        'post_status'   =>  'scheduled'
+      ));
+
+      $activated = True;
+    }
+    if ($payment_count && $activated){
+      return $output . '(' . $payed_count . '/' . $payment_count . ') - *ACTIVATED*';
+    } elseif ($payment_count){
+      return $output . '(' . $payed_count . '/' . $payment_count . ')';
+    }
+  }
+  else {
+    return $output;
+  }
+
 }
 
 function _cmk_display_pending_events(){
@@ -920,14 +949,16 @@ function _cmk_display_pending_events(){
       $roles = ( array ) $user->roles;
       if ( in_array( "administrator", $roles ) || in_array( "business_administrator", $roles ) ) {
         $the_query = _cmk_get_pending_events();
+
         if ( $the_query->have_posts() ) {
-          $output =   '
+
+          $output = '
           <table class="tg">
           <tr>
           <th class="tg-0lax">Event Name / Link</th>
           <th class="tg-0lax">Event Id</th>
-          <th class="tg-0lax">Submission Date</th>
-          <th class="tg-0lax">User</th>
+          <th class="tg-0lax">EVENT DATE/ CHECK CALENDAR LINK</th>
+          <th class="tg-0lax">User / Email Link</th>
           <th class="tg-0lax">Payment Status</th>
           <th class="tg-0lax">Create Invoice</th>
           <th class="tg-0lax">Publish Event</th>
@@ -938,8 +969,8 @@ function _cmk_display_pending_events(){
             $output .= '<tr>
             <td class="tg-0lax"><a href="/wp-admin/post.php?post='. get_the_ID() . '&action=edit&classic-editor=1" target="_blank">'. get_the_title() .' </a></td>
             <td class="tg-0lax">'. get_the_ID() . '</td>
-            <td class="tg-0lax">'. get_the_date() . '</td>
-            <td class="tg-0lax">'. get_the_author() . '</td>
+            <td class="tg-0lax"><a href="/events/'. tribe_get_start_date( $event_id, false, 'Y-m-d').'" target="_blank">'. tribe_get_start_date() . '</a></td>
+            <td class="tg-0lax"><a href="mailto:'. get_the_author_meta( 'user_email' ) .'">'. get_the_author() . '<a/></td>
             <td class="tg-0lax">'. _cmk_get_payment_status($event_id) . '</td>
             <td class="tg-0lax"><a href="/wp-admin/post-new.php?post_type=shop_order" target="_blank">CREATE INVOICE</a></td>
             <td class="tg-0lax"><a href="/wp-admin/post.php?post='. get_the_ID() . '&action=edit&classic-editor=1" target="_blank">PUBLISH</a></td>
@@ -1037,10 +1068,14 @@ function misha_editable_order_meta_general( $order ){
 			$event_id = get_post_meta( $order->get_id(), 'event_id', true );
 			$event_date = get_post_meta( $order->get_id(), 'event_date', true );
 			$invoice_notes = get_post_meta( $order->get_id(), 'invoice_notes', true );
+			$include_contract = get_post_meta( $order->get_id(), 'include_contract', true );
+			$contract_language = get_post_meta( $order->get_id(), 'contract_language', true );
+      $base_contract_page_id = 31417;
 		?>
 		<div class="address">
 			<p><strong>Is this a deposit?</strong><?php echo $is_deposit ? 'Yes' : 'No' ?></p>
 			<p><strong>Is this for an event?</strong><?php echo $is_event ? 'Yes' : 'No' ?></p>
+			<p><strong>Include a Studio Rental Agreement contract in this invoice?</strong><?php echo $include_contract ? 'Yes' : 'No' ?></p>
 			<?php
 				// we show the rest fields in this column only if this order is marked as a gift
 				if( $is_event ) :
@@ -1049,6 +1084,8 @@ function misha_editable_order_meta_general( $order ){
           <p><strong>Event ID:</strong> <?php echo $event_id ?></p>
 					<p><strong>Event Date:</strong> <?php echo $event_date ?></p>
 					<p><strong>Invoice Notes:</strong> <?php echo wpautop( $invoice_notes ) ?></p>
+
+
 				<?php
 				endif;
 			?>
@@ -1105,9 +1142,41 @@ function misha_editable_order_meta_general( $order ){
       'value' => $invoice_notes,
       'wrapper_class' => 'form-field-wide'
     ) );
+    woocommerce_wp_radio( array(
+      'id' => 'include_contract',
+      'label' => 'Send the contract with the invoice?',
+      'value' => $include_contract,
+      'options' => array(
+        '' => 'No',
+        '1' => 'Yes'
+      ),
+      'style' => 'width:16px', // required for checkboxes and radio buttons
+      'wrapper_class' => 'form-field-wide' // always add this class
 
-		?></div>
+    ) );
 
+    // Get contract language
+    if (get_post($base_contract_page_id)) {
+      $base_contract_post = get_post($base_contract_page_id);
+    }
+    if (get_post_meta( $order->get_id(), 'contract_language', true )) {
+      $contract_language = get_post_meta( $order->get_id(), 'contract_language', true );
+    } else {
+      $contract_language = $base_contract_post->post_content;
+    }
+
+    woocommerce_wp_textarea_input( array(
+      'id' => 'contract_language',
+      'label' => 'Contract Language:',
+      'rows' => 15,
+      'class' => 'cmk-contract-textarea',
+      'value' => $contract_language,
+      'wrapper_class' => 'form-field-wide'
+    ) );
+
+		?>
+      <button><a href="/wp-admin/post.php?post=<?php echo $base_contract_page_id ?>&action=edit&classic-editor=1" target="_blank">Edit the DEFAULT contract</a></button>
+  </div>
 
 <?php
 }
@@ -1121,6 +1190,8 @@ function misha_save_general_details( $ord_id ){
 	update_post_meta( $ord_id, 'event_id', wc_clean( $_POST[ 'event_id' ] ) );
 	update_post_meta( $ord_id, 'event_date', wc_clean( $_POST[ 'event_date' ] ) );
 	update_post_meta( $ord_id, 'invoice_notes', wc_sanitize_textarea( $_POST[ 'invoice_notes' ] ) );
+	update_post_meta( $ord_id, 'include_contract', wc_clean( $_POST[ 'include_contract' ] ) );
+	update_post_meta( $ord_id, 'contract_language', ( $_POST[ 'contract_language' ] ) );
 	// wc_clean() and wc_sanitize_textarea() are WooCommerce sanitization functions
 }
 
@@ -1132,14 +1203,14 @@ add_action( 'woocommerce_email_order_meta', 'misha_add_email_order_meta', 10, 3 
  */
 function misha_add_email_order_meta( $order_obj, $sent_to_admin, $plain_text ){
 
-	// this order meta checks if order is marked as a gift
+	// this order meta checks if order is marked as an event
 	$is_event = get_post_meta( $order_obj->get_order_number(), 'is_event', true );
 
-	// we won't display anything if it is not a gift
+	// we won't display anything if it is not an event
 	if( empty( $is_event ) )
 		return;
 
-	// ok, if it is the gift order, get all the other fields
+	// ok, if it is the event order, get all the other fields
 	$is_deposit = get_post_meta( $order_obj->get_order_number(), 'is_deposit', true );
 	$event_name = get_post_meta( $order_obj->get_order_number(), 'event_name', true );
 	$event_id = get_post_meta( $order_obj->get_order_number(), 'event_id', true );
@@ -1151,7 +1222,7 @@ function misha_add_email_order_meta( $order_obj, $sent_to_admin, $plain_text ){
 	if ( $plain_text === false ) {
 
 		// you shouldn't have to worry about inline styles, WooCommerce adds them itself depending on the theme you use
-		echo '<h2>Event Information</h2>
+		echo '<h2>Event Invoice Information</h2>
 		<ul>';
     if ($is_deposit==1) {
       echo '<li><strong>This is a deposit</strong> Yes</li>';
@@ -1160,13 +1231,13 @@ function misha_add_email_order_meta( $order_obj, $sent_to_admin, $plain_text ){
     }
 		echo '<li><strong>Event name:</strong> ' . $event_name . '</li>
     <li><strong>Event ID:</strong> ' . $event_id . '</li>
-    <li><strong>Event name:</strong> ' . $event_date . '</li>
+    <li><strong>Event date:</strong> ' . $event_date . '</li>
 		<li><strong>Invoice Notes:</strong> ' . wpautop( $invoice_notes ) . '</li>
 		</ul>';
 
 	} else {
 
-		echo "GIFT INFORMATION\n
+		echo "EVENT INFORMATION\n
 		Is event: Yes
 		Event name: $event_name
     Event id: $event_id
