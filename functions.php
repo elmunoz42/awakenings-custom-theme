@@ -913,22 +913,24 @@ function _cmk_get_payment_status($this_event_id){
   }
 
   // NOTE: IMPORTANT - IF $payed_count = $payment_count update EVENT TO ACTIVE!!!
-  // NOTE: DO WE NEED TO HOOK INTO add_action('tribe_events_update_meta','NAME OF A FUNCTION WE CREATE', 10,3)
-  // see https://wordpress.stackexchange.com/questions/348671/create-post-and-update-in-the-same-flow
   if ($payment_count) {
-    // NOTE: Getting error event is not updating to scheduled and this notice appears: Notice: Trying to get property 'public' of non-object in D:\D-Drive-Files\Awakenings\Awakenings-Local-version3\wp-includes\capabilities.php on line 239
+
     if ($payed_count==$payment_count){
-      // NOTE THIS WAS FROM API https://github.com/crowdfavorite-mirrors/wp-the-events-calendar/blob/master/lib/tribe-event-api.class.php
-       // eventUpdate($this_event_id, array(
-      //   'post_status'   =>  'scheduled'
-      // ));
 
       // NOTE this was recommended for updating content but it seems that for scheduling something needs to happen.
       tribe_update_event($this_event_id, array(
-        'post_status'   =>  'scheduled'
+        'post_status'   =>  'future'
       ));
+      // NOTE NOT WORKING! make event private
+      // update_post_meta( $this_event_id, 'tribe_events_cat', array(120) );
 
       $activated = True;
+      ?>
+      <!-- javascript popup -->
+      <script type="text/javascript">
+        alert('an event was automatically activated!');
+      </script>
+      <?php
     }
     if ($payment_count && $activated){
       return $output . '(' . $payed_count . '/' . $payment_count . ') - *ACTIVATED*';
@@ -1067,10 +1069,13 @@ function misha_editable_order_meta_general( $order ){
 			$event_name = get_post_meta( $order->get_id(), 'event_name', true );
 			$event_id = get_post_meta( $order->get_id(), 'event_id', true );
 			$event_date = get_post_meta( $order->get_id(), 'event_date', true );
+      $studio_access = (get_post_meta( $order->get_id(), 'studio_access', true) > 0) ? get_post_meta( $order->get_id(), 'studio_access', true) : 15 ;
+      $studio_egress = (get_post_meta( $order->get_id(), 'studio_egress', true) > 0) ? get_post_meta( $order->get_id(), 'studio_egress', true) : 15 ;
 			$invoice_notes = get_post_meta( $order->get_id(), 'invoice_notes', true );
 			$include_contract = get_post_meta( $order->get_id(), 'include_contract', true );
 			$contract_language = get_post_meta( $order->get_id(), 'contract_language', true );
       $base_contract_page_id = 31417;
+      $default_invoice_notes = 'We have approved your event at the Awakenings Wellness Center. Your invoice for this event is attached below with the Awakenings Studio Rental Agreement. Please make sure you read and understand the agreement as that is necessary for booking the space.';
 		?>
 		<div class="address">
 			<p><strong>Is this a deposit?</strong><?php echo $is_deposit ? 'Yes' : 'No' ?></p>
@@ -1083,7 +1088,8 @@ function misha_editable_order_meta_general( $order ){
 					<p><strong>Event Name:</strong> <?php echo $event_name ?></p>
           <p><strong>Event ID:</strong> <?php echo $event_id ?></p>
 					<p><strong>Event Date:</strong> <?php echo $event_date ?></p>
-					<p><strong>Invoice Notes:</strong> <?php echo wpautop( $invoice_notes ) ?></p>
+          p><strong>Studio Access Time:</strong> <?php echo $studio_access ?> minutes</p>
+					<p><strong>Studio Egress Time:</strong> <?php echo $studio_egress ?> minutes</p>
 
 
 				<?php
@@ -1135,9 +1141,45 @@ function misha_editable_order_meta_general( $order ){
       'value' => $event_date,
       'description' => 'Date of the event.'
     ) );
+    woocommerce_wp_radio( array(
+      'id' => 'studio_access',
+      'label' => 'How much time does the client have to setup before event start time? (studio_access)',
+      'value' => $studio_access,
+      'options' => array(
+        '15' => '15 minutes',
+        '30' => '30 minutes',
+        '45' => '45 minutes',
+        '60' => '1 hour',
+        '90' => '1.5 hours',
+        '120' => '2 hours',
+        '240' => '4 hours'
+      ),
+      'style' => 'width:16px', // required for checkboxes and radio buttons
+      'wrapper_class' => 'form-field-wide' // always add this class
+    ) );
+    woocommerce_wp_radio( array(
+      'id' => 'studio_egress',
+      'label' => 'How long after the event does the studio need to be empty? (studio_egress)',
+      'value' => $studio_egress,
+      'options' => array(
+        '15' => '15 minutes',
+        '30' => '30 minutes',
+        '45' => '45 minutes',
+        '60' => '1 hour',
+        '90' => '1.5 hours',
+        '120' => '2 hours',
+        '240' => '4 hours'
+      ),
+      'style' => 'width:16px', // required for checkboxes and radio buttons
+      'wrapper_class' => 'form-field-wide' // always add this class
+    ) );
+
+    if (get_post_meta( $order->get_id(), 'contract_language', true )=='') {
+      $invoice_notes=$default_invoice_notes;
+    }
     woocommerce_wp_textarea_input( array(
       'id' => 'invoice_notes',
-      'label' => 'Invoice Notes:',
+      'label' => 'Invoice Greeting:',
       'rows' => 6,
       'value' => $invoice_notes,
       'wrapper_class' => 'form-field-wide'
@@ -1189,9 +1231,18 @@ function misha_save_general_details( $ord_id ){
 	update_post_meta( $ord_id, 'event_name', wc_clean( $_POST[ 'event_name' ] ) );
 	update_post_meta( $ord_id, 'event_id', wc_clean( $_POST[ 'event_id' ] ) );
 	update_post_meta( $ord_id, 'event_date', wc_clean( $_POST[ 'event_date' ] ) );
+	update_post_meta( $ord_id, 'studio_access', wc_clean( $_POST[ 'studio_access' ] ) );
+	update_post_meta( $ord_id, 'studio_egress', wc_clean( $_POST[ 'studio_egress' ] ) );
 	update_post_meta( $ord_id, 'invoice_notes', wc_sanitize_textarea( $_POST[ 'invoice_notes' ] ) );
 	update_post_meta( $ord_id, 'include_contract', wc_clean( $_POST[ 'include_contract' ] ) );
 	update_post_meta( $ord_id, 'contract_language', ( $_POST[ 'contract_language' ] ) );
+
+  // update event
+  if ( $_POST[ 'is_event' ] ) {
+    update_post_meta( $_POST[ 'event_id' ], 'contract_language', ( $_POST[ 'contract_language' ] ) );
+    update_post_meta($_POST[ 'event_id' ] , 'studio_access', wc_clean( $_POST[ 'studio_access' ] ) );
+  	update_post_meta( $_POST[ 'event_id' ], 'studio_egress', wc_clean( $_POST[ 'studio_egress' ] ) );
+  }
 	// wc_clean() and wc_sanitize_textarea() are WooCommerce sanitization functions
 }
 
@@ -1215,7 +1266,6 @@ function misha_add_email_order_meta( $order_obj, $sent_to_admin, $plain_text ){
 	$event_name = get_post_meta( $order_obj->get_order_number(), 'event_name', true );
 	$event_id = get_post_meta( $order_obj->get_order_number(), 'event_id', true );
 	$event_date = get_post_meta( $order_obj->get_order_number(), 'event_date', true );
-	$invoice_notes = get_post_meta( $order_obj->get_order_number(), 'invoice_notes', true );
 
 
 	// ok, we will add the separate version for plaintext emails
@@ -1232,7 +1282,6 @@ function misha_add_email_order_meta( $order_obj, $sent_to_admin, $plain_text ){
 		echo '<li><strong>Event name:</strong> ' . $event_name . '</li>
     <li><strong>Event ID:</strong> ' . $event_id . '</li>
     <li><strong>Event date:</strong> ' . $event_date . '</li>
-		<li><strong>Invoice Notes:</strong> ' . wpautop( $invoice_notes ) . '</li>
 		</ul>';
 
 	} else {
@@ -1241,8 +1290,7 @@ function misha_add_email_order_meta( $order_obj, $sent_to_admin, $plain_text ){
 		Is event: Yes
 		Event name: $event_name
     Event id: $event_id
-		Event date: $event_date
-		Invoice Notes: $invoice_notes";
+		Event date: $event_date";
 
 	}
 

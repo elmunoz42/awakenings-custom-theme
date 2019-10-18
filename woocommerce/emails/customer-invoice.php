@@ -32,24 +32,12 @@ do_action( 'woocommerce_email_header', $email_heading, $email ); ?>
 <?php if ( $order->has_status( 'pending' ) ) { ?>
 	<p>
 	<?php
+	// invoice_notes default: We have approved your event at the Awakenings. Your invoice for this event is attached below with the Awakenings Studio Rental Agreement. Please make sure you read and understand the agreement as that is necessary for booking the space.
+	echo '<p>' . $order->get_meta('invoice_notes') . '</p>';
 	printf(
 		wp_kses(
 			/* translators: %1$s Site title, %2$s Order pay link */
-			__( 'We have approved your event at the %1$s. Your invoice for this event is attached below with the Awakenings Studio Rental Agreement. Please make sure you read and understand the agreement as that is necessary for booking the space.
-				 Please make the required payments as soon as you can so that we can confirm your event on our calendar.  Until we receive the required payment, your event will remain tentative and could be bumped if we do not hear back from you soon. You understand that returning the required payment secures your event and represents your agreement to the contract below. For your convenience, you can approve your contract and pay online at the link below.
-
-				 %2$s.
-
-				 Also, if you have not done so, please use this link to provide an event description for our calendar.  We have found that events get much more attention and interest when they include a description and an image.  You can also activate registration management for your event. This will provide a registration box for participants to RSVP or buy tickets for the event. You can find your event online at:
-
-				ADD LINK HERE!!!
-
-				Thanks for supporting our wellness community with your great events and energy.  It is a pleasure to be able to host your activities at Awakenings!
-
-				With warmth,
-
-
-				 %2$s. ', 'woocommerce' ),
+			__( 'Please make the required payments as soon as you can so that we can confirm your event on our calendar.  Until we receive the required payment, your event will remain tentative and could be bumped if we do not hear back from you soon. You understand that returning the required payment secures your event and represents your agreement to the contract below. For your convenience, you can approve your contract and pay online with this link: %2$s. ', 'woocommerce' ),
 			array(
 				'a' => array(
 					'href' => array(),
@@ -59,12 +47,18 @@ do_action( 'woocommerce_email_header', $email_heading, $email ); ?>
 		esc_html( get_bloginfo( 'name', 'display' ) ),
 		'<a href="' . esc_url( $order->get_checkout_payment_url() ) . '">' . esc_html__( 'Pay for this order', 'woocommerce' ) . '</a>'
 	);
+	echo '<br>';
+	echo '<p>Also, if you have not done so, please log into <a href="https://awakenings.org/login">your Awakenings.org dashboard </a> to provide an event description for our calendar.  We have found that events get much more attention and interest when they include a description and an image.  You can also activate registration management for your event. This will provide a registration box for participants to RSVP or buy tickets for the event. Once you login you can find your event under the "Manage / Create Events" tab or with this <a href="https://staging.awakenings.org/events/community/edit/event/'. $order->get_meta('event_id') . '" target="_blank">link<a/>. </p>
+ <p>Thanks for supporting our wellness community with your great events and energy.  It is a pleasure to be able to host your activities at Awakenings!</p>
+ <p>With warmth,</p>
+ <p>The Awakenings Team<p>'
 	?>
 	</p>
 
 <?php } else { ?>
 	<p>
 	<?php
+		echo $order->get_meta('invoice_notes');
 		/* translators: %s Order date */
 		printf( esc_html__( 'Here are the details of your order placed on %s:', 'woocommerce' ), esc_html( wc_format_datetime( $order->get_date_created() ) ) );
 	?>
