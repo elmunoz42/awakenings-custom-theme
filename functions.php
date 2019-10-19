@@ -1066,35 +1066,46 @@ function misha_editable_order_meta_general( $order ){
 			 */
 			$is_event = get_post_meta( $order->get_id(), 'is_event', true );
       $is_deposit = get_post_meta( $order->get_id(), 'is_deposit', true );
-			$event_name = get_post_meta( $order->get_id(), 'event_name', true );
 			$event_id = get_post_meta( $order->get_id(), 'event_id', true );
-			$event_date = get_post_meta( $order->get_id(), 'event_date', true );
-      $studio_access = (get_post_meta( $order->get_id(), 'studio_access', true) > 0) ? get_post_meta( $order->get_id(), 'studio_access', true) : 15 ;
-      $studio_egress = (get_post_meta( $order->get_id(), 'studio_egress', true) > 0) ? get_post_meta( $order->get_id(), 'studio_egress', true) : 15 ;
+      if ($event_id > 1) {
+        $event_name = get_the_title( $event_id);
+        $event_start_date = tribe_get_start_date( $event_id, true, 'm-d-Y' );
+        $event_start_time = tribe_get_start_date( $event_id, true, 'g:i a ' );
+        $event_end_date = tribe_get_end_date( $event_id, true, 'm-y-Y');
+        $event_end_time = tribe_get_end_date( $event_id, true, 'g:i a');
+      }
+      $studio_access = (get_post_meta( $event_id, 'studio_access', true) > 0) ? get_post_meta( $event_id, 'studio_access', true) : 15 ;
+      $studio_egress = (get_post_meta( $event_id, 'studio_egress', true) > 0) ? get_post_meta( $event_id, 'studio_egress', true) : 15 ;
+      $contract_language = get_post_meta( $event_id, 'contract_language', true );
 			$invoice_notes = get_post_meta( $order->get_id(), 'invoice_notes', true );
 			$include_contract = get_post_meta( $order->get_id(), 'include_contract', true );
-			$contract_language = get_post_meta( $order->get_id(), 'contract_language', true );
       $base_contract_page_id = 31417;
       $default_invoice_notes = 'We have approved your event at the Awakenings Wellness Center. Your invoice for this event is attached below with the Awakenings Studio Rental Agreement. Please make sure you read and understand the agreement as that is necessary for booking the space.';
 		?>
-		<div class="address">
-			<p><strong>Is this a deposit?</strong><?php echo $is_deposit ? 'Yes' : 'No' ?></p>
-			<p><strong>Is this for an event?</strong><?php echo $is_event ? 'Yes' : 'No' ?></p>
-			<p><strong>Include a Studio Rental Agreement contract in this invoice?</strong><?php echo $include_contract ? 'Yes' : 'No' ?></p>
-			<?php
-				// we show the rest fields in this column only if this order is marked as a gift
-				if( $is_event ) :
-				?>
-					<p><strong>Event Name:</strong> <?php echo $event_name ?></p>
-          <p><strong>Event ID:</strong> <?php echo $event_id ?></p>
-					<p><strong>Event Date:</strong> <?php echo $event_date ?></p>
-          p><strong>Studio Access Time:</strong> <?php echo $studio_access ?> minutes</p>
-					<p><strong>Studio Egress Time:</strong> <?php echo $studio_egress ?> minutes</p>
+    <div class="address">
+      <p><strong>Is this a deposit?</strong><?php echo $is_deposit ? 'Yes' : 'No' ?></p>
+      <p><strong>Is this for an event?</strong><?php echo $is_event ? 'Yes' : 'No' ?></p>
+      <p><strong>Include a Studio Rental Agreement contract in this invoice?</strong><?php echo $include_contract ? 'Yes' : 'No' ?></p>
+      <?php
+      // we show the rest fields in this column only if this order is marked as an event
+      if ( $is_event) : ?>
+      <p><strong>Event ID:</strong> <?php echo $event_id ?></p>
+      <?php
+    endif;
+    if( $is_event && $event_id>1 ) :
+      ?>
+      <p><strong>Event Name:</strong> <?php echo $event_name ?></p>
+      <p><strong>Event Start Date:</strong> <?php echo $event_start_date ?></p>
+      <p><strong>Event End Date:</strong> <?php echo $event_end_date ?></p>
+      <p><strong>Studio Access Time:</strong> <?php echo $studio_access ?> minutes</p>
+      <p><strong>Event Start Time:</strong> <?php echo $event_start_time ?>
+      <p><strong>Event End Time:</strong> <?php echo $event_end_time ?>
+      <p><strong>Studio Egress Time:</strong> <?php echo $studio_egress ?> minutes</p>
 
 
-				<?php
-				endif;
-			?>
+          <?php
+        endif;
+        ?>
 		</div>
 		<div class="edit_address"><?php
 
@@ -1121,29 +1132,14 @@ function misha_editable_order_meta_general( $order ){
       'wrapper_class' => 'form-field-wide' // always add this class
     ) );
     woocommerce_wp_text_input( array(
-      'id' => 'event_name',
-      'label' => 'Event name:',
-      'value' => $event_name,
-      'wrapper_class' => 'form-field-wide'
-    ) );
-    woocommerce_wp_text_input( array(
       'id' => 'event_id',
       'label' => 'Event id:',
       'value' => $event_id,
       'wrapper_class' => 'form-field-wide'
     ) );
-    woocommerce_wp_text_input( array(
-      'id' => 'event_date',
-      'label' => 'Event date',
-      'wrapper_class' => 'form-field-wide',
-      'class' => 'date-picker',
-      'style' => 'width:100%',
-      'value' => $event_date,
-      'description' => 'Date of the event.'
-    ) );
     woocommerce_wp_radio( array(
       'id' => 'studio_access',
-      'label' => 'How much time does the client have to setup before event start time? (studio_access)',
+      'label' => 'How much time does the client have to setup before event start time?',
       'value' => $studio_access,
       'options' => array(
         '15' => '15 minutes',
@@ -1159,7 +1155,7 @@ function misha_editable_order_meta_general( $order ){
     ) );
     woocommerce_wp_radio( array(
       'id' => 'studio_egress',
-      'label' => 'How long after the event does the studio need to be empty? (studio_egress)',
+      'label' => 'How long after the event does the studio need to be empty?',
       'value' => $studio_egress,
       'options' => array(
         '15' => '15 minutes',
