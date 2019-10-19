@@ -1092,7 +1092,7 @@ function misha_editable_order_meta_general( $order ){
       <p><strong>Event ID:</strong> <?php echo $event_id ?></p>
       <?php
     endif;
-    if( $is_event && $event_id>1 ) :
+    if( $is_event && tribe_is_event($event_id) ) :
       ?>
       <p><strong>Event Name:</strong> <?php echo $event_name ?></p>
       <p><strong>Event Start Date:</strong> <?php echo $event_start_date ?></p>
@@ -1224,9 +1224,18 @@ add_action( 'woocommerce_process_shop_order_meta', 'misha_save_general_details' 
 function misha_save_general_details( $ord_id ){
 	update_post_meta( $ord_id, 'is_event', wc_clean( $_POST[ 'is_event' ] ) );
 	update_post_meta( $ord_id, 'is_deposit', wc_clean( $_POST[ 'is_deposit' ] ) );
-	update_post_meta( $ord_id, 'event_name', wc_clean( $_POST[ 'event_name' ] ) );
 	update_post_meta( $ord_id, 'event_id', wc_clean( $_POST[ 'event_id' ] ) );
-	update_post_meta( $ord_id, 'event_date', wc_clean( $_POST[ 'event_date' ] ) );
+
+  // NOTE: if event_id supplied is indeed an event post then save the name and date of the event TO THE ORDER (AS A FALLBACK AND FOR EMAILS)!
+  $event_id = wc_clean( $_POST[ 'event_id' ] );
+  if (tribe_is_event($event_id)) {
+    $event_name = get_the_title( $event_id);
+    update_post_meta( $ord_id, 'event_name', wc_clean( $event_name ) );
+    $event_start_datetime = tribe_get_start_date( $event_id, true, 'Y-m-d H:i:s' );
+    update_post_meta( $ord_id, 'event_start_datetime', wc_clean( $event_start_datetime ) );
+    $event_end_datetime = tribe_get_end_date( $event_id, true, 'Y-m-d H:i:s' );
+    update_post_meta( $ord_id, 'event_end_datetime', wc_clean( $event_end_datetime ) );
+  }
 	update_post_meta( $ord_id, 'studio_access', wc_clean( $_POST[ 'studio_access' ] ) );
 	update_post_meta( $ord_id, 'studio_egress', wc_clean( $_POST[ 'studio_egress' ] ) );
 	update_post_meta( $ord_id, 'invoice_notes', wc_sanitize_textarea( $_POST[ 'invoice_notes' ] ) );
@@ -1261,7 +1270,15 @@ function misha_add_email_order_meta( $order_obj, $sent_to_admin, $plain_text ){
 	$is_deposit = get_post_meta( $order_obj->get_order_number(), 'is_deposit', true );
 	$event_name = get_post_meta( $order_obj->get_order_number(), 'event_name', true );
 	$event_id = get_post_meta( $order_obj->get_order_number(), 'event_id', true );
-	$event_date = get_post_meta( $order_obj->get_order_number(), 'event_date', true );
+	$event_start_datetime = get_post_meta( $order_obj->get_order_number(), 'event_start_datetime', true );
+	$studio_access = get_post_meta( $order_obj->get_order_number(), 'studio_access', true );
+  // convert event start into seconds and subtract access time
+  $event_start_seconds = strtotime($event_start_datetime) - ($studio_access * 60);
+	$studio_access_datetime = date("Y-m-d g:i a", $event_start_seconds);
+	$event_end_datetime = get_post_meta( $order_obj->get_order_number(), 'event_end_datetime', true );
+  $studio_egress =  get_post_meta( $order_obj->get_order_number(), 'studio_egress', true );
+  $event_end_seconds = strtotime($event_end_datetime) + ($studio_egress * 60);
+	$studio_egress_datetime = date("Y-m-d g:i a", $event_end_seconds);
 
 
 	// ok, we will add the separate version for plaintext emails
@@ -1277,7 +1294,10 @@ function misha_add_email_order_meta( $order_obj, $sent_to_admin, $plain_text ){
     }
 		echo '<li><strong>Event name:</strong> ' . $event_name . '</li>
     <li><strong>Event ID:</strong> ' . $event_id . '</li>
-    <li><strong>Event date:</strong> ' . $event_date . '</li>
+    <li><strong>Studio Access:</strong> ' . $studio_access_datetime . '</li>
+    <li><strong>Event Start:</strong> ' . date("Y-m-d g:i a",strtotime($event_start_datetime)) . '</li>
+    <li><strong>Event End:</strong> ' . date("Y-m-d g:i a",strtotime($event_end_datetime)) . '</li>
+    <li><strong>Event Egress: </strong> ' . $studio_egress_datetime . ' - Please make sure to have the studio clean and ready for the next event at this date/time</li>
 		</ul>';
 
 	} else {
@@ -1286,10 +1306,14 @@ function misha_add_email_order_meta( $order_obj, $sent_to_admin, $plain_text ){
 		Is event: Yes
 		Event name: $event_name
     Event id: $event_id
-		Event date: $event_date";
+		Studio Access: $studio_access_datetime
+    Event Start: $event_start_datetime
+    Event End: $event_end_datetime
+    Event Egress: $studio_egress_datetime Please make sure to have the studio clean and ready for the next event at this date/time.";
 
 	}
 
 }
+
 
 ?>
