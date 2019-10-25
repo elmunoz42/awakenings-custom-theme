@@ -1074,6 +1074,8 @@ function misha_editable_order_meta_general( $order ){
         $event_end_date = tribe_get_end_date( $event_id, true, 'm-y-Y');
         $event_end_time = tribe_get_end_date( $event_id, true, 'g:i a');
       }
+      $total_booking_cost = get_post_meta( $order->get_id(), 'total_booking_cost', true );
+      $create_invoice_series = 0; //default to 0
       $studio_access = (get_post_meta( $event_id, 'studio_access', true) > 0) ? get_post_meta( $event_id, 'studio_access', true) : 15 ;
       $studio_egress = (get_post_meta( $event_id, 'studio_egress', true) > 0) ? get_post_meta( $event_id, 'studio_egress', true) : 15 ;
       $contract_language = get_post_meta( $event_id, 'contract_language', true );
@@ -1120,6 +1122,19 @@ function misha_editable_order_meta_general( $order ){
       'style' => 'width:16px', // required for checkboxes and radio buttons
       'wrapper_class' => 'form-field-wide' // always add this class
     ) );
+    woocommerce_wp_text_input( array(
+      'id' => 'event_id',
+      'label' => 'Event id:',
+      'value' => $event_id,
+      'wrapper_class' => 'form-field-wide'
+    ) );
+    woocommerce_wp_text_input( array(
+      'id' => 'total_booking_cost',
+      'label' => 'If there are multiple payments what is the total studio rental fee? (for reference only)',
+      'description' => 'PLEASE add any charges in the ITEM section below this form section',
+      'value' => $total_booking_cost,
+      'wrapper_class' => 'form-field-wide'
+    ) );
     woocommerce_wp_radio( array(
       'id' => 'is_deposit',
       'label' => 'Is this a deposit?',
@@ -1131,11 +1146,16 @@ function misha_editable_order_meta_general( $order ){
       'style' => 'width:16px', // required for checkboxes and radio buttons
       'wrapper_class' => 'form-field-wide' // always add this class
     ) );
-    woocommerce_wp_text_input( array(
-      'id' => 'event_id',
-      'label' => 'Event id:',
-      'value' => $event_id,
-      'wrapper_class' => 'form-field-wide'
+    woocommerce_wp_radio( array(
+      'id' => 'create_invoice_series',
+      'label' => 'If this is part of an event series do you want to create an invoice (order) for each event of the series?',
+      'value' => $create_invoice_series,
+      'options' => array(
+        '' => 'No',
+        '1' => 'Yes'
+      ),
+      'style' => 'width:16px', // required for checkboxes and radio buttons
+      'wrapper_class' => 'form-field-wide' // always add this class
     ) );
     woocommerce_wp_radio( array(
       'id' => 'studio_access',
@@ -1225,6 +1245,8 @@ function misha_save_general_details( $ord_id ){
 	update_post_meta( $ord_id, 'is_event', wc_clean( $_POST[ 'is_event' ] ) );
 	update_post_meta( $ord_id, 'is_deposit', wc_clean( $_POST[ 'is_deposit' ] ) );
 	update_post_meta( $ord_id, 'event_id', wc_clean( $_POST[ 'event_id' ] ) );
+	update_post_meta( $ord_id, 'total_booking_cost', wc_clean( $_POST[ 'total_booking_cost' ] ) );
+  // update_post_meta( $ord_id, 'create_invoice_series', wc_clean( $_POST[ 'create_invoice_series'] ) );
 
   // NOTE: if event_id supplied is indeed an event post then save the name and date of the event TO THE ORDER (AS A FALLBACK AND FOR EMAILS)!
   $event_id = wc_clean( $_POST[ 'event_id' ] );
@@ -1235,6 +1257,7 @@ function misha_save_general_details( $ord_id ){
     update_post_meta( $ord_id, 'event_start_datetime', wc_clean( $event_start_datetime ) );
     $event_end_datetime = tribe_get_end_date( $event_id, true, 'Y-m-d H:i:s' );
     update_post_meta( $ord_id, 'event_end_datetime', wc_clean( $event_end_datetime ) );
+
   }
 	update_post_meta( $ord_id, 'studio_access', wc_clean( $_POST[ 'studio_access' ] ) );
 	update_post_meta( $ord_id, 'studio_egress', wc_clean( $_POST[ 'studio_egress' ] ) );
@@ -1247,8 +1270,10 @@ function misha_save_general_details( $ord_id ){
     update_post_meta( $_POST[ 'event_id' ], 'contract_language', ( $_POST[ 'contract_language' ] ) );
     update_post_meta($_POST[ 'event_id' ] , 'studio_access', wc_clean( $_POST[ 'studio_access' ] ) );
   	update_post_meta( $_POST[ 'event_id' ], 'studio_egress', wc_clean( $_POST[ 'studio_egress' ] ) );
+  	update_post_meta( $_POST[ 'event_id' ], 'total_booking_cost', wc_clean( $_POST[ 'total_booking_cost' ] ) );
   }
-	// wc_clean() and wc_sanitize_textarea() are WooCommerce sanitization functions
+
+  
 }
 
 add_action( 'woocommerce_email_order_meta', 'misha_add_email_order_meta', 10, 3 );
