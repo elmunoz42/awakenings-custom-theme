@@ -1096,6 +1096,7 @@ function misha_editable_order_meta_general( $order ){
     endif;
     if( $is_event && tribe_is_event($event_id) ) :
       ?>
+
       <p><strong>Event Name:</strong> <?php echo $event_name ?></p>
       <p><strong>Event Start Date:</strong> <?php echo $event_start_date ?></p>
       <p><strong>Event End Date:</strong> <?php echo $event_end_date ?></p>
@@ -1239,17 +1240,18 @@ function misha_editable_order_meta_general( $order ){
 <?php
 }
 
-add_action( 'woocommerce_process_shop_order_meta', 'misha_save_general_details' );
 
+
+//NOTE this function saves the meta for an order and to it's connected event and returns an $event_id
 function misha_save_general_details( $ord_id ){
 	update_post_meta( $ord_id, 'is_event', wc_clean( $_POST[ 'is_event' ] ) );
 	update_post_meta( $ord_id, 'is_deposit', wc_clean( $_POST[ 'is_deposit' ] ) );
 	update_post_meta( $ord_id, 'event_id', wc_clean( $_POST[ 'event_id' ] ) );
 	update_post_meta( $ord_id, 'total_booking_cost', wc_clean( $_POST[ 'total_booking_cost' ] ) );
-  // update_post_meta( $ord_id, 'create_invoice_series', wc_clean( $_POST[ 'create_invoice_series'] ) );
 
-  // NOTE: if event_id supplied is indeed an event post then save the name and date of the event TO THE ORDER (AS A FALLBACK AND FOR EMAILS)!
+
   $event_id = wc_clean( $_POST[ 'event_id' ] );
+  // NOTE: if event_id supplied is indeed an event post then save the name and date of the event TO THE ORDER (AS A FALLBACK AND FOR EMAILS)!
   if (tribe_is_event($event_id)) {
     $event_name = get_the_title( $event_id);
     update_post_meta( $ord_id, 'event_name', wc_clean( $event_name ) );
@@ -1257,7 +1259,6 @@ function misha_save_general_details( $ord_id ){
     update_post_meta( $ord_id, 'event_start_datetime', wc_clean( $event_start_datetime ) );
     $event_end_datetime = tribe_get_end_date( $event_id, true, 'Y-m-d H:i:s' );
     update_post_meta( $ord_id, 'event_end_datetime', wc_clean( $event_end_datetime ) );
-
   }
 	update_post_meta( $ord_id, 'studio_access', wc_clean( $_POST[ 'studio_access' ] ) );
 	update_post_meta( $ord_id, 'studio_egress', wc_clean( $_POST[ 'studio_egress' ] ) );
@@ -1272,9 +1273,59 @@ function misha_save_general_details( $ord_id ){
   	update_post_meta( $_POST[ 'event_id' ], 'studio_egress', wc_clean( $_POST[ 'studio_egress' ] ) );
   	update_post_meta( $_POST[ 'event_id' ], 'total_booking_cost', wc_clean( $_POST[ 'total_booking_cost' ] ) );
   }
-
-  
+  return $event_id;
 }
+
+
+// ***************** NOTE: Get recurring event ids
+function cmk_get_recurring_event_ids( $order_id, $event_id ) {
+  if( ! function_exists( 'tribe_is_recurring_event' ) ) {
+    // bail because we need PRO active for recurring events
+    return array();
+  }
+  if ( tribe_is_recurring_event( $event_id ) ) {
+    $args = array(
+      'post_parent' => $event_id,
+      'post_type'   => 'any',
+      'numberposts' => -1,
+      'post_status' => 'any'
+    );
+    $all_events_in_recurrence_series = get_children( $args);
+    $all_event_ids_in_recurrence_series = array();
+    foreach ( $all_events_in_recurrence_series as $event) {
+      array_push($all_event_ids_in_recurrence_series , $event->ID);
+    }
+    $ids_string = implode(", ",$all_event_ids_in_recurrence_series);
+    update_post_meta( $order_id, 'event_children_ids', $ids_string );
+    return $all_event_ids_in_recurrence_series;
+  } else {
+    //NOTE Add notification here!
+    echo '<script>alert("not a recurring event")</script>';
+    return array();
+  }
+}
+
+
+// Save event invoice(s) data and meta data
+add_action( 'woocommerce_process_shop_order_meta', 'cmk_save_main_order_and_potentially_series' );
+
+function cmk_save_main_order_and_potentially_series( $ord_id ) {
+  // saves main event invoice meta data and returns event id
+  $event_id = misha_save_general_details( $ord_id );
+  if ($_POST[ 'create_invoice_series' ]) {
+    $series_event_ids = cmk_get_recurring_event_ids( $ord_id, $event_id );
+    // if (!empty($series_event_ids)) {
+    //   for ($i=0; $i < count($series_event_ids); $i++) {
+    //
+    //   }
+    // }
+    // foreach ($series_event_ids as $series_event_id) {
+    //   misha_save_general_details( $series_event_id );
+    // }
+  }
+  return;
+}
+
 
 add_action( 'woocommerce_email_order_meta', 'misha_add_email_order_meta', 10, 3 );
 /*
