@@ -17,7 +17,6 @@ add_action( 'wp_enqueue_scripts', 'child_theme_name_scripts' );
 add_action( 'woocommerce_after_shop_loop_item', 'woo_show_excerpt_shop_page', 5 );
 function woo_show_excerpt_shop_page() {
 	global $product;
-
 	echo $product->post->post_excerpt;
 }
 
@@ -30,25 +29,15 @@ add_filter('mailpoet_newsletter_shortcode', 'mailpoet_custom_shortcode', 10, 5);
 
 // Buddy Press Home Page Link
 function _cmk_member_page_url( $login_name=0 ) {
+  global $bp;
+  /* if no login name is specified, use logged in user */
+  if ($login_name) {
 
-global $bp;
-
-
-
-/* if no login name is specified, use logged in user */
-
-	if ($login_name) {
-
-		$url = $bp->root_domain . '/members/' . $login_name ;
-
-	} else {
-
-		$url = $bp->loggedin_user->domain;
-
-	}
-
-return $url . 'profile';
-
+    $url = $bp->root_domain . '/members/' . $login_name ;
+  } else {
+    $url = $bp->loggedin_user->domain;
+  }
+  return $url . 'profile';
 }
 
 add_shortcode('cmk_member_page_url', '_cmk_member_page_url');
@@ -67,37 +56,37 @@ add_shortcode( 'my_purchased_products', 'bbloomer_products_bought_by_curr_user' 
 
 function bbloomer_products_bought_by_curr_user() {
 
-    // GET CURR USER
-    $current_user = wp_get_current_user();
-    if ( 0 == $current_user->ID ) return;
+  // GET CURR USER
+  $current_user = wp_get_current_user();
+  if ( 0 == $current_user->ID ) return;
 
-    // GET USER ORDERS (COMPLETED + PROCESSING)
-    $customer_orders = get_posts( array(
-        'numberposts' => -1,
-        'meta_key'    => '_customer_user',
-        'meta_value'  => $current_user->ID,
-        'post_type'   => wc_get_order_types(),
-        'post_status' => array_keys( wc_get_is_paid_statuses() ),
-    ) );
+  // GET USER ORDERS (COMPLETED + PROCESSING)
+  $customer_orders = get_posts( array(
+    'numberposts' => -1,
+    'meta_key'    => '_customer_user',
+    'meta_value'  => $current_user->ID,
+    'post_type'   => wc_get_order_types(),
+    'post_status' => array_keys( wc_get_is_paid_statuses() ),
+  ) );
 
-    // LOOP THROUGH ORDERS AND GET PRODUCT IDS
-    if ( ! $customer_orders ) return;
-    $product_ids = array();
-    foreach ( $customer_orders as $customer_order ) {
-        $order = wc_get_order( $customer_order->ID );
-        $items = $order->get_items();
-        foreach ( $items as $item ) {
-            $product_id = $item->get_product_id();
-            $product_ids[] = $product_id;
+  // LOOP THROUGH ORDERS AND GET PRODUCT IDS
+  if ( ! $customer_orders ) return;
+  $product_ids = array();
+  foreach ( $customer_orders as $customer_order ) {
+    $order = wc_get_order( $customer_order->ID );
+    $items = $order->get_items();
+    foreach ( $items as $item ) {
+      $product_id = $item->get_product_id();
+      $product_ids[] = $product_id;
 
-        }
     }
-    $product_ids = array_unique( $product_ids );
-    $product_ids_str = implode( ",", $product_ids );
+  }
+  $product_ids = array_unique( $product_ids );
+  $product_ids_str = implode( ",", $product_ids );
 
-    // PASS PRODUCT IDS TO PRODUCTS SHORTCODE
-		echo '<h3 class="cmk-previous-therapists">Your Therapists:</h3><div class="cmk-previous-therapists-widget">';
-    return do_shortcode("[products ids='$product_ids_str']") . '</div>';
+  // PASS PRODUCT IDS TO PRODUCTS SHORTCODE
+  echo '<h3 class="cmk-previous-therapists">Your Therapists:</h3><div class="cmk-previous-therapists-widget">';
+  return do_shortcode("[products ids='$product_ids_str']") . '</div>';
 
 }
 
@@ -106,44 +95,44 @@ function bbloomer_products_bought_by_curr_user() {
 add_shortcode( 'cmk_my_therapists', '_cmk_my_therapists' );
 
 function _cmk_my_therapists() {
-    global $product;
-    // GET CURR USER
-    $current_user = wp_get_current_user();
-    if ( 0 == $current_user->ID ) return;
+  global $product;
+  // GET CURR USER
+  $current_user = wp_get_current_user();
+  if ( 0 == $current_user->ID ) return;
 
-    // GET USER ORDERS (COMPLETED + PROCESSING)
-    $customer_orders = get_posts( array(
-        'numberposts' => -1,
-        'meta_key'    => '_customer_user',
-        'meta_value'  => $current_user->ID,
-        'post_type'   => wc_get_order_types(),
-        'post_status' => array_keys( wc_get_is_paid_statuses() ),
-    ) );
+  // GET USER ORDERS (COMPLETED + PROCESSING)
+  $customer_orders = get_posts( array(
+    'numberposts' => -1,
+    'meta_key'    => '_customer_user',
+    'meta_value'  => $current_user->ID,
+    'post_type'   => wc_get_order_types(),
+    'post_status' => array_keys( wc_get_is_paid_statuses() ),
+  ) );
 
-    // LOOP THROUGH ORDERS AND GET PRODUCT IDS
-		if ( ! $customer_orders ) return;
-    $product_ids = array();
-		$_pf = new WC_Product_Factory();
-    foreach ( $customer_orders as $customer_order ) {
-        $order = wc_get_order( $customer_order->ID );
-        $items = $order->get_items();
-        foreach ( $items as $item ) {
-            $product_id = $item->get_product_id();
-						$product = $_pf->get_product($id);
-						// var_dump($product_cat_ids);
-						if (  is_wc_appointment_product( $product ) ) {
-            $product_ids[] = $product_id;
-						}
-        }
+  // LOOP THROUGH ORDERS AND GET PRODUCT IDS
+  if ( ! $customer_orders ) return;
+  $product_ids = array();
+  $_pf = new WC_Product_Factory();
+  foreach ( $customer_orders as $customer_order ) {
+    $order = wc_get_order( $customer_order->ID );
+    $items = $order->get_items();
+    foreach ( $items as $item ) {
+      $product_id = $item->get_product_id();
+      $product = $_pf->get_product($id);
+      // var_dump($product_cat_ids);
+      if (  is_wc_appointment_product( $product ) ) {
+        $product_ids[] = $product_id;
+      }
     }
-    $product_ids = array_unique( $product_ids );
-    $product_ids_str = implode( ",", $product_ids );
+  }
+  $product_ids = array_unique( $product_ids );
+  $product_ids_str = implode( ",", $product_ids );
 
-    // PASS PRODUCT IDS TO PRODUCTS SHORTCODE
-		// var_dump($product_ids);
-		echo '<h3 class="cmk-previous-therapists">' . $product_ids_str . ' Your Previous Sessions:</h3>';
-		echo $product_ids_str;
-    return do_shortcode("[products ids='$product_ids_str']");
+  // PASS PRODUCT IDS TO PRODUCTS SHORTCODE
+  // var_dump($product_ids);
+  echo '<h3 class="cmk-previous-therapists">' . $product_ids_str . ' Your Previous Sessions:</h3>';
+  echo $product_ids_str;
+  return do_shortcode("[products ids='$product_ids_str']");
 
 }
 
@@ -154,38 +143,38 @@ add_shortcode( 'cmk_my_tickets', '_cmk_my_tickets' );
 
 function _cmk_my_tickets() {
 
-    // GET CURR USER
-    $current_user = wp_get_current_user();
-    if ( 0 == $current_user->ID ) return;
+  // GET CURR USER
+  $current_user = wp_get_current_user();
+  if ( 0 == $current_user->ID ) return;
 
-    // GET USER ORDERS (COMPLETED + PROCESSING)
-    $customer_orders = get_posts( array(
-        'numberposts' => -1,
-        'meta_key'    => '_customer_user',
-        'meta_value'  => $current_user->ID,
-        'post_type'   => wc_get_order_types(),
-        'post_status' => array_keys( wc_get_is_paid_statuses() ),
-    ) );
+  // GET USER ORDERS (COMPLETED + PROCESSING)
+  $customer_orders = get_posts( array(
+    'numberposts' => -1,
+    'meta_key'    => '_customer_user',
+    'meta_value'  => $current_user->ID,
+    'post_type'   => wc_get_order_types(),
+    'post_status' => array_keys( wc_get_is_paid_statuses() ),
+  ) );
 
-    // LOOP THROUGH ORDERS AND GET PRODUCT IDS
-    if ( ! $customer_orders ) return;
-    $product_ids = array();
-    foreach ( $customer_orders as $customer_order ) {
-        $order = wc_get_order( $customer_order->ID );
-        $items = $order->get_items();
-        foreach ( $items as $item ) {
-            $product_id = $item->get_product_id();
-						if ( has_term( 'Ticket', '', $product_id )) {
-							$product_ids[] = $product_id;
-						}
-        }
+  // LOOP THROUGH ORDERS AND GET PRODUCT IDS
+  if ( ! $customer_orders ) return;
+  $product_ids = array();
+  foreach ( $customer_orders as $customer_order ) {
+    $order = wc_get_order( $customer_order->ID );
+    $items = $order->get_items();
+    foreach ( $items as $item ) {
+      $product_id = $item->get_product_id();
+      if ( has_term( 'Ticket', '', $product_id )) {
+        $product_ids[] = $product_id;
+      }
     }
-    $product_ids = array_unique( $product_ids );
-    $product_ids_str_tx = implode( ",", $product_ids );
+  }
+  $product_ids = array_unique( $product_ids );
+  $product_ids_str_tx = implode( ",", $product_ids );
 
-    // PASS PRODUCT IDS TO PRODUCTS SHORTCODE
-		echo '<h3 class="cmk-previous-tickets">Your Tickets:</h3>';
-    return do_shortcode("[products ids='$product_ids_str_tx']");
+  // PASS PRODUCT IDS TO PRODUCTS SHORTCODE
+  echo '<h3 class="cmk-previous-tickets">Your Tickets:</h3>';
+  return do_shortcode("[products ids='$product_ids_str_tx']");
 
 }
 
@@ -205,8 +194,8 @@ function _cmk_my_tickets() {
 add_filter( 'woocommerce_account_menu_items', 'bbloomer_remove_downloads_my_account', 999 );
 
 function bbloomer_remove_downloads_my_account( $items ) {
-unset($items['downloads']);
-return $items;
+  unset($items['downloads']);
+  return $items;
 }
 
 //****************NOTE: CMK - Rename Dashboard tab in my Account to Account Summary
@@ -214,8 +203,8 @@ return $items;
 add_filter( 'woocommerce_account_menu_items', 'bbloomer_rename_dashboard_my_account', 999 );
 
 function bbloomer_rename_dashboard_my_account( $items ) {
-$items['dashboard'] = 'Account Summary';
-return $items;
+  $items['dashboard'] = 'Account Summary';
+  return $items;
 }
 
 //****************NOTE: CMK - Rename Dashboard tab in my Orders to Receipts & Invoices
@@ -223,8 +212,8 @@ return $items;
 add_filter( 'woocommerce_account_menu_items', 'bbloomer_rename_orders_my_account', 999 );
 
 function bbloomer_rename_orders_my_account( $items ) {
-$items['orders'] = 'Receipts & Invoices';
-return $items;
+  $items['orders'] = 'Receipts & Invoices';
+  return $items;
 }
 
 
@@ -260,9 +249,9 @@ function remove_members_front_tab() {
 //****************** NOTE: CMK - Hide Profile Visibility
 // info: https://buddypress.org/support/topic/remove-profile-visibility-subnav/
 function bpfr_hide_visibility_tab() {
-	if( bp_is_active( 'xprofile' ) )
+  if( bp_is_active( 'xprofile' ) )
 
-		bp_core_remove_subnav_item( 'settings', 'profile' );
+  bp_core_remove_subnav_item( 'settings', 'profile' );
 
 }
 add_action( 'bp_ready', 'bpfr_hide_visibility_tab' );
@@ -271,7 +260,7 @@ add_action( 'bp_ready', 'bpfr_hide_visibility_tab' );
 add_filter( 'bp_settings_show_user_data_page', 'venutius_remove_data_page' );
 
 function venutius_remove_data_page($filter) {
-    return false;
+  return false;
 }
 
 // ***************** Delete account url: http://awakenings-local/members/carlos-mk/settings/delete-account/
@@ -279,13 +268,13 @@ function venutius_remove_data_page($filter) {
 
 //****************** NOTE: CMK - get user role of logged in user
 function wcmo_get_current_user_roles() {
- if( is_user_logged_in() ) {
- $user = wp_get_current_user();
- $roles = ( array ) $user->roles;
- return implode(", ", $roles);
- } else {
- return "unauthenticated-user";
- }
+  if( is_user_logged_in() ) {
+    $user = wp_get_current_user();
+    $roles = ( array ) $user->roles;
+    return implode(", ", $roles);
+  } else {
+    return "unauthenticated-user";
+  }
 }
 
 //****************** NOTE: CMK - get user role of logged in user and use to create dashboard link
@@ -321,12 +310,12 @@ function cmk_get_dashboard_url() {
 //****************** NOTE: CMK - Woocommerce add cart button if cart is not EmptyIterator NOTE NEEDS WORK
 add_shortcode( 'cmk_show_cart', '_cmk_show_cart' );
 function _cmk_show_cart() {
-        if ( ! WC()->cart->is_empty() ) {
-					return "<button><a href='/cart'>Cart <span aria-hidden='true' data-av_icon='' data-av_iconfont='entypo-fontello'></span></a></button>" ;
-				}
-				else {
-					return;
-				}
+  if ( ! WC()->cart->is_empty() ) {
+    return "<button><a href='/cart'>Cart <span aria-hidden='true' data-av_icon='' data-av_iconfont='entypo-fontello'></span></a></button>" ;
+  }
+  else {
+    return;
+  }
 }
 
 
@@ -419,7 +408,6 @@ function cmk_login_redirect( $redirect_to, $request, $user ) {
 		 $redirect_to =  "";
 	 }
  }
-
  return home_url($redirect_to);
 }
 
@@ -443,50 +431,50 @@ function _cmk_logout_url() {
 //***************************** NOTE: CMK - Create a New Default for the Backend Color scheme.
 // more info: https://wordpress.stackexchange.com/questions/126697/wp-3-8-default-admin-colour-for-all-users
 function set_default_admin_color($user_id) {
-    $args = array(
-        'ID' => $user_id,
-        'admin_color' => 'bbp-evergreen'
-    );
-    wp_update_user( $args );
+  $args = array(
+    'ID' => $user_id,
+    'admin_color' => 'bbp-evergreen'
+  );
+  wp_update_user( $args );
 }
 add_action('user_register', 'set_default_admin_color');
 
 //**************************** NOTE: CMK - Woocommerce image size
 // WC change image size
 add_theme_support( 'woocommerce', array(
-'thumbnail_image_width' => 450,
-'single_image_width' => 600,
+  'thumbnail_image_width' => 450,
+  'single_image_width' => 600,
 ) );
 
 //****************************** NOTE: Get Class Instructors
 add_shortcode( 'cmk_get_class_event_teachers', '_cmk_get_class_event_teachers' );
 function _cmk_get_class_event_teachers() {
-	$teacher_list_output = '<ul class="cmk-teachers-list">';
-	$teachers = array();
-	 $classes = tribe_get_events(
-				array(
-					'eventDisplay'=>'upcoming',
-					'posts_per_page'=>3,
-					'tax_query'=> array(
-						array(
-							'taxonomy' => 'tribe_events_cat',
-							'field' => 'slug',
-							'terms' => 'regular-class'
-						)
-				 )
-			)
-		);
-		foreach ($classes as $class) {
-			$class_id = $class->ID;
-			$organizer = tribe_get_organizer($class_id);
-			if ( ! in_array( $organizer, $teachers )){
-				array_push($teachers, $organizer );
-				$teacher_list_output .= '<li>'. tribe_get_organizer_link($class_id) .  '</a></li>';
-			}
+  $teacher_list_output = '<ul class="cmk-teachers-list">';
+  $teachers = array();
+  $classes = tribe_get_events(
+    array(
+      'eventDisplay'=>'upcoming',
+      'posts_per_page'=>3,
+      'tax_query'=> array(
+        array(
+          'taxonomy' => 'tribe_events_cat',
+          'field' => 'slug',
+          'terms' => 'regular-class'
+        )
+      )
+    )
+  );
+  foreach ($classes as $class) {
+    $class_id = $class->ID;
+    $organizer = tribe_get_organizer($class_id);
+    if ( ! in_array( $organizer, $teachers )){
+      array_push($teachers, $organizer );
+      $teacher_list_output .= '<li>'. tribe_get_organizer_link($class_id) .  '</a></li>';
+    }
 
-		}
+  }
 
-		return $teacher_list_output . '</ul>';
+  return $teacher_list_output . '</ul>';
 }
 
 
@@ -495,32 +483,32 @@ function _cmk_get_class_event_teachers() {
 // PART 1 front end
 add_shortcode( 'wpshout_frontend_post', '_wpshout_frontend_post' );
 function _wpshout_frontend_post() {
-	wp_get_current_user();
-	// check if user is allowed to create posts aka is at least therapist
-	if (current_user_can('read_private_forums')) {
+  wp_get_current_user();
+  // check if user is allowed to create posts aka is at least therapist
+  if (current_user_can('read_private_forums')) {
 
 
-		wpshout_save_post_if_submitted();
-		?>
-		<div><nav class="woocommerce-MyAccount-navigation" style="margin-bottom: 20px;">
-			<ul>
-				<li class="woocommerce-MyAccount-navigation-link "><a href="/dashboard-therapist">Back to Your Dashboard</a></li>
-				<li class="woocommerce-MyAccount-navigation-link "><a href="/wp-admin/edit.php">View / Edit Your Posts</a></li>
-			</ul>
-		</nav></div>
-		<hr>
-		<div class="">
-			<h3>Publish an Article</h3>
-		</div>
-		<div id="postbox">
-			<form id="new_post" name="new_post" method="post" enctype="multipart/form-data">
+    wpshout_save_post_if_submitted();
+    ?>
+    <div><nav class="woocommerce-MyAccount-navigation" style="margin-bottom: 20px;">
+      <ul>
+        <li class="woocommerce-MyAccount-navigation-link "><a href="/dashboard-therapist">Back to Your Dashboard</a></li>
+        <li class="woocommerce-MyAccount-navigation-link "><a href="/wp-admin/edit.php">View / Edit Your Posts</a></li>
+      </ul>
+    </nav></div>
+    <hr>
+    <div class="">
+      <h3>Publish an Article</h3>
+    </div>
+    <div id="postbox">
+      <form id="new_post" name="new_post" method="post" enctype="multipart/form-data">
 
-				<p><label for="title">Title</label><br />
-					<input type="text" id="title" value="" tabindex="1" size="20" name="title" />
-				</p>
+        <p><label for="title">Title</label><br />
+          <input type="text" id="title" value="" tabindex="1" size="20" name="title" />
+        </p>
 
-				<p>
-					<label for="content">Post Content</label>
+        <p>
+          <label for="content">Post Content</label>
 
           <?php
           wp_enqueue_media();
@@ -530,80 +518,79 @@ function _wpshout_frontend_post() {
             'media_buttons' => false,
             'tinymce'       => true,
             'quicktags'     => array('buttons'=>'link,img'),
-            )
-          );
-         ?>
-				</p>
+          )
+        );
+        ?>
+      </p>
 
-				<!-- <p>?php wp_dropdown_categories( 'show_count=1&hierarchical=1' ); ?</p> -->
+      <!-- <p>?php wp_dropdown_categories( 'show_count=1&hierarchical=1' ); ?</p> -->
 
-				<p><label for="post_tags">Tags</label>
+      <p><label for="post_tags">Tags</label>
 
-					<input type="text" value="" tabindex="5" size="16" name="post_tags" id="post_tags" /></p>
+        <input type="text" value="" tabindex="5" size="16" name="post_tags" id="post_tags" /></p>
 
-          <p><label for="title">Post Featured Image:</label>
+        <p><label for="title">Post Featured Image:</label>
 
-            <input type="file" class="form-control" id="thumbnail" name="thumbnail">
-          </p>
+          <input type="file" class="form-control" id="thumbnail" name="thumbnail">
+        </p>
 
-					<?php wp_nonce_field( 'wps-frontend-post' ); ?>
+        <?php wp_nonce_field( 'wps-frontend-post' ); ?>
 
-					<p align="right"><input type="submit" value="Publish" tabindex="6" id="submit" name="submit" /></p>
+        <p align="right"><input type="submit" value="Publish" tabindex="6" id="submit" name="submit" /></p>
 
-				</form>
-			</div>
-			<?php
-		}
-		else {
-			echo 'Please <a href="/?root" target="_blank">login</a> to view this page.';
-		}
-	}
+      </form>
+    </div>
+    <?php
+  }
+  else {
+    echo 'Please <a href="/?root" target="_blank">login</a> to view this page.';
+  }
+}
 
 
 //***************** Part 2 backend
 //  Save Post
 function wpshout_save_post_if_submitted() {
-    // Stop running function if form wasn't submitted
-    if ( !isset($_POST['title']) ) {
-        return;
-    }
+  // Stop running function if form wasn't submitted
+  if ( !isset($_POST['title']) ) {
+    return;
+  }
 
-    // Check that the nonce was set and valid
-    if( !wp_verify_nonce($_POST['_wpnonce'], 'wps-frontend-post') ) {
-        echo 'Did not save because your form seemed to be invalid. Sorry';
-        return;
-    }
+  // Check that the nonce was set and valid
+  if( !wp_verify_nonce($_POST['_wpnonce'], 'wps-frontend-post') ) {
+    echo 'Did not save because your form seemed to be invalid. Sorry';
+    return;
+  }
 
-    // Do some minor form validation to make sure there is content
-    if (strlen($_POST['title']) < 3) {
-        echo 'Please enter a title. Titles must be at least three characters long.';
-        return;
-    }
-    if (strlen($_POST['content']) < 100) {
-        echo 'Please enter content more than 100 characters in length';
-        return;
-    }
+  // Do some minor form validation to make sure there is content
+  if (strlen($_POST['title']) < 3) {
+    echo 'Please enter a title. Titles must be at least three characters long.';
+    return;
+  }
+  if (strlen($_POST['content']) < 100) {
+    echo 'Please enter content more than 100 characters in length';
+    return;
+  }
 
-    // Add the content of the form to $post as an array
-    $post = array(
-        'post_title'    => $_POST['title'],
-        'post_content'  => $_POST['content'],
-        'post_category' => array(86),
-        'tags_input'    => $_POST['post_tags'],
-        'post_status'   => 'publish',   // Could be: draft
-        'post_type' 	=> 'post' // Could be: `page` or your CPT
-    );
-    $pid = wp_insert_post($post);
+  // Add the content of the form to $post as an array
+  $post = array(
+    'post_title'    => $_POST['title'],
+    'post_content'  => $_POST['content'],
+    'post_category' => array(86),
+    'tags_input'    => $_POST['post_tags'],
+    'post_status'   => 'publish',   // Could be: draft
+    'post_type' 	=> 'post' // Could be: `page` or your CPT
+  );
+  $pid = wp_insert_post($post);
 
-    cmk_attach_image($pid);
+  cmk_attach_image($pid);
 
-		$link = get_permalink( $pid );
-		echo '<div class="cmk-article-published-notice" style="padding: 30px; margin: 10px 0px; background-color: lightgray;">';
-    echo '<h4>Saved your post successfully! :)</h4><br>';
-		echo '<a href="' . $link .  '">View Post</a><br>';
-		echo '<a href="/wp-admin/post.php?post=' . $pid .'&action=edit&classic-editor=1">Edit or Add Images</a>';
-		echo '</div>';
-
+  $link = get_permalink( $pid );
+  echo '<div class="cmk-article-published-notice" style="padding: 30px; margin: 10px 0px; background-color: lightgray;">';
+  echo '<h4>Saved your post successfully! :)</h4><br>';
+  echo '<a href="' . $link .  '">View Post</a><br>';
+  echo '<a href="/wp-admin/post.php?post=' . $pid .'&action=edit&classic-editor=1">Edit or Add Images</a>';
+  echo '</div>';
 }
 
 //********************************** NOTE: CMK - Shortcode for front end room opening post submission
@@ -611,32 +598,32 @@ function wpshout_save_post_if_submitted() {
 // PART 1 front end
 add_shortcode( 'cmk_frontend_room_opening_post', '_cmk_frontend_room_opening_post' );
 function _cmk_frontend_room_opening_post() {
-	// check if user is allowed to create posts aka is at least therapist
-	if (current_user_can('read_private_forums')) {
+  // check if user is allowed to create posts aka is at least therapist
+  if (current_user_can('read_private_forums')) {
 
 
-		cmk_save_room_opening_post_if_submitted();
-		?>
-		<div><nav class="woocommerce-MyAccount-navigation" style="margin-bottom: 20px;">
-			<ul>
-				<li class="woocommerce-MyAccount-navigation-link "><a href="/dashboard-therapist">Back to Your Dashboard</a></li>
-				<li class="woocommerce-MyAccount-navigation-link "><a href="/wp-admin/edit.php?s&post_status=all&post_type=post&action=-1&m=0&cat=119&filter_action=Filter&paged=1&action2=-1">View / Edit Your Posts</a></li>
-			</ul>
-		</nav></div>
-		<hr>
-		<div class="">
-			<h3>Create a Room Opening Post</h3>
-			<h5>Your room opening post will be published on the front page. Make sure to add all the pertinent information you can also upload an image (recommended).</h5>
-		</div>
-		<div id="postbox">
-			<form id="new_post" name="new_post" method="post" enctype="multipart/form-data">
+    cmk_save_room_opening_post_if_submitted();
+    ?>
+    <div><nav class="woocommerce-MyAccount-navigation" style="margin-bottom: 20px;">
+      <ul>
+        <li class="woocommerce-MyAccount-navigation-link "><a href="/dashboard-therapist">Back to Your Dashboard</a></li>
+        <li class="woocommerce-MyAccount-navigation-link "><a href="/wp-admin/edit.php?s&post_status=all&post_type=post&action=-1&m=0&cat=119&filter_action=Filter&paged=1&action2=-1">View / Edit Your Posts</a></li>
+      </ul>
+    </nav></div>
+    <hr>
+    <div class="">
+      <h3>Create a Room Opening Post</h3>
+      <h5>Your room opening post will be published on the front page. Make sure to add all the pertinent information you can also upload an image (recommended).</h5>
+    </div>
+    <div id="postbox">
+      <form id="new_post" name="new_post" method="post" enctype="multipart/form-data">
 
-				<p><label for="title">Title</label><br />
-					<input type="text" id="title" value="" tabindex="1" size="20" name="title" />
-				</p>
+        <p><label for="title">Title</label><br />
+          <input type="text" id="title" value="" tabindex="1" size="20" name="title" />
+        </p>
 
         <p>
-					<label for="content">Post Content</label>
+          <label for="content">Post Content</label>
 
           <?php
           wp_enqueue_media();
@@ -646,14 +633,14 @@ function _cmk_frontend_room_opening_post() {
             'media_buttons' => false,
             'tinymce'       => true,
             'quicktags'     => array('buttons'=>'link,img'),
-            )
-          );
-         ?>
-				</p>
+          )
+        );
+        ?>
+      </p>
 
-				<p><label for="post_tags">Tags</label>
+      <p><label for="post_tags">Tags</label>
 
-					<input type="text" value="" tabindex="5" size="16" name="post_tags" id="post_tags" /></p>
+        <input type="text" value="" tabindex="5" size="16" name="post_tags" id="post_tags" /></p>
 
         <p><label for="title">Post Featured Image:</label>
 
@@ -661,18 +648,18 @@ function _cmk_frontend_room_opening_post() {
         </p>
 
 
-					<?php wp_nonce_field( 'wps-frontend-post' ); ?>
+        <?php wp_nonce_field( 'wps-frontend-post' ); ?>
 
-					<p align="right"><input type="submit" value="Publish" tabindex="6" id="submit" name="submit" /></p>
+        <p align="right"><input type="submit" value="Publish" tabindex="6" id="submit" name="submit" /></p>
 
-				</form>
-			</div>
-			<?php
-		}
-		else {
-			echo 'Please <a href="/?root" target="_blank">login</a> to view this page.';
-		}
-	}
+      </form>
+    </div>
+    <?php
+  }
+  else {
+    echo 'Please <a href="/?root" target="_blank">login</a> to view this page.';
+  }
+}
 
 
 //***************** Part 2 backend
@@ -712,52 +699,50 @@ function cmk_attach_image($post_id) {
 
     }
   }
-
-
 }
 
 //  NOTE: Save Portfolio Post
 function cmk_save_room_opening_post_if_submitted() {
-    // Stop running function if form wasn't submitted
-    if ( !isset($_POST['title']) ) {
-        return;
-    }
+  // Stop running function if form wasn't submitted
+  if ( !isset($_POST['title']) ) {
+    return;
+  }
 
-    // Check that the nonce was set and valid
-    if( !wp_verify_nonce($_POST['_wpnonce'], 'wps-frontend-post') ) {
-        echo 'Did not save because your form seemed to be invalid. Sorry';
-        return;
-    }
+  // Check that the nonce was set and valid
+  if( !wp_verify_nonce($_POST['_wpnonce'], 'wps-frontend-post') ) {
+    echo 'Did not save because your form seemed to be invalid. Sorry';
+    return;
+  }
 
-    // Do some minor form validation to make sure there is content
-    if (strlen($_POST['title']) < 3) {
-        echo 'Please enter a title. Titles must be at least three characters long.';
-        return;
-    }
-    if (strlen($_POST['content']) < 100) {
-        echo 'Please enter content more than 100 characters in length';
-        return;
-    }
+  // Do some minor form validation to make sure there is content
+  if (strlen($_POST['title']) < 3) {
+    echo 'Please enter a title. Titles must be at least three characters long.';
+    return;
+  }
+  if (strlen($_POST['content']) < 100) {
+    echo 'Please enter content more than 100 characters in length';
+    return;
+  }
 
-    // Add the content of the form to $post as an array
-    $post = array(
-        'post_title'    => $_POST['title'],
-        'post_content'  => $_POST['content'],
-        'tags_input'    => $_POST['post_tags'],
-				'post_category' => array(119),
-        'post_status'   => 'publish',   // Could be: draft
-        'post_type' 	=> 'post' // Could be: `page` or your CPT
-    );
-    $pid = wp_insert_post($post);
+  // Add the content of the form to $post as an array
+  $post = array(
+    'post_title'    => $_POST['title'],
+    'post_content'  => $_POST['content'],
+    'tags_input'    => $_POST['post_tags'],
+    'post_category' => array(119),
+    'post_status'   => 'publish',   // Could be: draft
+    'post_type' 	=> 'post' // Could be: `page` or your CPT
+  );
+  $pid = wp_insert_post($post);
 
-    cmk_attach_image($pid);
+  cmk_attach_image($pid);
 
-		$link = get_permalink( $pid );
-		echo '<div class="cmk-article-published-notice" style="padding: 30px; margin: 10px 0px; background-color: lightgray;">';
-    echo '<h4>Saved your room post successfully! :)</h4><br>';
-		echo '<a href="' . $link .  '">View Post</a><br>';
-		echo '<a href="/wp-admin/post.php?post=' . $pid .'&action=edit&classic-editor=1">Edit or Add Images</a>';
-		echo '</div>';
+  $link = get_permalink( $pid );
+  echo '<div class="cmk-article-published-notice" style="padding: 30px; margin: 10px 0px; background-color: lightgray;">';
+  echo '<h4>Saved your room post successfully! :)</h4><br>';
+  echo '<a href="' . $link .  '">View Post</a><br>';
+  echo '<a href="/wp-admin/post.php?post=' . $pid .'&action=edit&classic-editor=1">Edit or Add Images</a>';
+  echo '</div>';
 
 }
 
@@ -767,18 +752,18 @@ function cmk_save_room_opening_post_if_submitted() {
  */
  add_action('init', 'customRSS');
  function customRSS(){
-         add_feed('newsletter', 'customRSSFunc');
+   add_feed('newsletter', 'customRSSFunc');
  }
  function customRSSFunc(){
-         get_template_part('rss', 'newsletter');
+   get_template_part('rss', 'newsletter');
  }
  // display featured post thumbnails in WordPress feeds
  function wcs_post_thumbnails_in_feeds( $content ) {
-     global $post;
-     if( has_post_thumbnail( $post->ID ) ) {
-         $content = '<p><style> .wp-post-image { width: 200px !important; }</style>' . get_the_post_thumbnail( $post->ID , 'post-medium') . '</p>' . $content;
-     }
-     return $content;
+   global $post;
+   if( has_post_thumbnail( $post->ID ) ) {
+     $content = '<p><style> .wp-post-image { width: 200px !important; }</style>' . get_the_post_thumbnail( $post->ID , 'post-medium') . '</p>' . $content;
+   }
+   return $content;
  }
  add_filter( 'the_excerpt_rss', 'wcs_post_thumbnails_in_feeds' );
  add_filter( 'the_content_feed', 'wcs_post_thumbnails_in_feeds' );
@@ -928,7 +913,7 @@ function _cmk_get_payment_status($this_event_id){
       ?>
       <!-- javascript popup -->
       <script type="text/javascript">
-        alert('an event was automatically activated!');
+      alert('an event was automatically activated!');
       </script>
       <?php
     }
