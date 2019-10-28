@@ -1041,8 +1041,8 @@ add_action( 'woocommerce_admin_order_data_after_order_details', 'misha_editable_
 
 
 function misha_editable_order_meta_general( $order ){
-  ?>
 
+  ?>
 		<br class="clear" />
 		<h4>Order Description<a href="#" class="edit_address">Edit</a></h4>
 		<?php
@@ -1089,7 +1089,6 @@ function misha_editable_order_meta_general( $order ){
       <p><strong>Event Start Time:</strong> <?php echo $event_start_time ?>
       <p><strong>Event End Time:</strong> <?php echo $event_end_time ?>
       <p><strong>Studio Egress Time:</strong> <?php echo $studio_egress ?> minutes</p>
-
 
           <?php
         endif;
@@ -1290,6 +1289,56 @@ function cmk_get_recurring_event_ids( $order_id, $event_id ) {
   }
 }
 
+// **************  NOTE NOTE NOTE USES PLUGIN WC DUPLICATE ORDER !!!
+// TODO send in original_order_object, send in CloneOrder instance (so that it's not being instantiated each time), instead of $_POST use original_order_object values
+function cmk_create_event_order_series_instance($original_order_id, $event_id){
+
+  // NOTE NOTE NOTE clone order function from plugin pasted in here to get new id
+  $currentUser = wp_get_current_user();
+  $order_data =  array(
+        'post_type'     => 'shop_order',
+        'post_status'   => 'publish',
+        'ping_status'   => 'closed',
+        'parent_id'     => $original_order_id,
+        'post_author'   => $currentUser->ID,
+        'post_password' => uniqid( 'order_' )
+    );
+    $new_order_id = wp_insert_post( $order_data, true );
+    $new_order = new WC_Order($new_order_id);
+    if ( is_wp_error( $new_order_id ) ) {
+        add_action( 'admin_notices', array($this, 'clone__error'));
+    } else {
+    // NOTE NOTE NOTE get plugin class so we can use functions
+    $cloneorder_object = new CloneOrder;
+    // NOTE NOTE NOTE this will copy all the data from the original order which will have the wrong event info that's fixed next
+    $cloneorder_object->cloned_order_data($new_order_id, $original_order_id);
+    // update status
+    $new_order->update_status('pending', 'order_note');
+    // Update metadata:
+      update_post_meta($new_order_id , 'event_id', $event_id );
+      $event_name = get_the_title( $event_id);
+      update_post_meta( $new_order_id, 'event_name', wc_clean( $event_name ) );
+      $event_start_datetime = tribe_get_start_date( $event_id, true, 'Y-m-d H:i:s' );
+      update_post_meta( $new_order_id, 'event_start_datetime', wc_clean( $event_start_datetime ) );
+      $event_end_datetime = tribe_get_end_date( $event_id, true, 'Y-m-d H:i:s' );
+      update_post_meta( $new_order_id, 'event_end_datetime', wc_clean( $event_end_datetime ) );
+
+      //
+      update_post_meta( $ord_id, 'is_event', wc_clean( $_POST[ 'is_event' ] ) );
+      update_post_meta( $ord_id, 'is_deposit', wc_clean( $_POST[ 'is_deposit' ] ) );
+      update_post_meta( $ord_id, 'total_booking_cost', wc_clean( $_POST[ 'total_booking_cost' ] ) );
+      update_post_meta( $ord_id, 'studio_access', wc_clean( $_POST[ 'studio_access' ] ) );
+      update_post_meta( $ord_id, 'studio_egress', wc_clean( $_POST[ 'studio_egress' ] ) );
+      update_post_meta( $ord_id, 'invoice_notes', wc_sanitize_textarea( $_POST[ 'invoice_notes' ] ) );
+      update_post_meta( $ord_id, 'include_contract', wc_clean( $_POST[ 'include_contract' ] ) );
+      update_post_meta( $ord_id, 'contract_language', ( $_POST[ 'contract_language' ] ) );
+      // update event in the series
+      update_post_meta( $_POST[ 'event_id' ], 'contract_language', ( $_POST[ 'contract_language' ] ) );
+      update_post_meta($_POST[ 'event_id' ] , 'studio_access', wc_clean( $_POST[ 'studio_access' ] ) );
+      update_post_meta( $_POST[ 'event_id' ], 'studio_egress', wc_clean( $_POST[ 'studio_egress' ] ) );
+      update_post_meta( $_POST[ 'event_id' ], 'total_booking_cost', wc_clean( $_POST[ 'total_booking_cost' ] ) );
+  }
+}
 
 // Save event invoice(s) data and meta data
 add_action( 'woocommerce_process_shop_order_meta', 'cmk_save_main_order_and_potentially_series' );
@@ -1297,16 +1346,12 @@ add_action( 'woocommerce_process_shop_order_meta', 'cmk_save_main_order_and_pote
 function cmk_save_main_order_and_potentially_series( $ord_id ) {
   // saves main event invoice meta data and returns event id
   $event_id = misha_save_general_details( $ord_id );
+
   if ($_POST[ 'create_invoice_series' ]) {
     $series_event_ids = cmk_get_recurring_event_ids( $ord_id, $event_id );
-    // if (!empty($series_event_ids)) {
-    //   for ($i=0; $i < count($series_event_ids); $i++) {
-    //
-    //   }
-    // }
-    // foreach ($series_event_ids as $series_event_id) {
-    //   misha_save_general_details( $series_event_id );
-    // }
+    foreach ($series_event_ids as $series_event_id) {
+      cmk_create_event_order_series_instance($ord_id, $series_event_id);
+    }
   }
   return;
 }
