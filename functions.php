@@ -1264,11 +1264,10 @@ function misha_editable_order_meta_general( $order ){
 function misha_save_general_details( $ord_id, $total_booking_cost, $deposit_ammount){
   $event_id = wc_clean( $_POST[ 'event_id' ] );
   $is_deposit = wc_clean( $_POST[ 'is_deposit' ] );
-  cmk_get_recurring_event_ids( $ord_id, $event_id);
-
+  $number_of_events = count(cmk_get_recurring_event_ids( $ord_id, $event_id)) + 1 ;
   //if its not a deposit add a remainder fee. if is a deposit add a deposit fee NOTE this is used when you are creating a deposit from scratch but it is NOT ADVISED BECAUSE THE MASTER ORDER WONT HAVE ANY RECORD OF IT. IT IS BETTER TO CREATE A MASTER ORDER AND THE DEPOSIT AT THE SAME TIME.
   if (!$is_deposit){
-    $remainder_ammount = $total_booking_cost - $deposit_ammount;
+    $remainder_ammount = ($total_booking_cost - $deposit_ammount)/$number_of_events;
     $main_order = new WC_Order($ord_id);
     //remove previous fees to make room for new
     $main_order->remove_order_items();
@@ -1484,11 +1483,12 @@ function cmk_create_event_order_series_instance($original_order_id, $event_id, $
 add_action( 'woocommerce_process_shop_order_meta', 'cmk_save_main_order_and_potentially_series' );
 
 function cmk_save_main_order_and_potentially_series( $ord_id ) {
+
   $total_booking_cost = wc_clean( $_POST[ 'total_booking_cost' ] );
   $deposit_ammount = cmk_deposit_calculator($total_booking_cost,  wc_clean( $_POST[ 'deposit_ammount' ] ));
 
   // saves main event invoice meta data and returns event id
-  $event_id = misha_save_general_details( $ord_id , $total_booking_cost, $deposit_ammount);
+  $event_id = misha_save_general_details( $ord_id, $total_booking_cost, $deposit_ammount);
 
 
   if ($_POST[ 'create_a_deposit']){
