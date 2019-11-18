@@ -23,8 +23,6 @@ function woo_show_excerpt_shop_page() {
 // **************** NOTE: CMK - Remove price from shop
 remove_action( 'woocommerce_after_shop_loop_item_title', 'woocommerce_template_loop_price', 10 );
 
-// ***************** NOTE: CMK - Allow for shortcode in MailPoet
-add_filter('mailpoet_newsletter_shortcode', 'mailpoet_custom_shortcode', 10, 5);
 
 
 // Buddy Press Home Page Link
@@ -301,21 +299,13 @@ function cmk_get_dashboard_url() {
 		elseif ( in_array( "business_administrator", $roles ) ) {
 			return "/dashboard-administrator";
 		}
+		elseif ( in_array( "store_administrator", $roles ) ) {
+			return "/dashboard-administrator";
+		}
 		else {
 			return "/";
 		}
 	}
-}
-
-//****************** NOTE: CMK - Woocommerce add cart button if cart is not EmptyIterator NOTE NEEDS WORK
-add_shortcode( 'cmk_show_cart', '_cmk_show_cart' );
-function _cmk_show_cart() {
-  if ( ! WC()->cart->is_empty() ) {
-    return "<button><a href='/cart'>Cart <span aria-hidden='true' data-av_icon='' data-av_iconfont='entypo-fontello'></span></a></button>" ;
-  }
-  else {
-    return;
-  }
 }
 
 
@@ -402,6 +392,9 @@ function cmk_login_redirect( $redirect_to, $request, $user ) {
 		 $redirect_to =  "/dashboard-administrator";
 	 }
 	 elseif ( in_array( "business_administrator", $roles ) ) {
+		 $redirect_to =  "/dashboard-administrator";
+	 }
+	 elseif ( in_array( "store_administrator", $roles ) ) {
 		 $redirect_to =  "/dashboard-administrator";
 	 }
 	 else {
@@ -573,6 +566,7 @@ function wpshout_save_post_if_submitted() {
   }
 
   // Add the content of the form to $post as an array
+  // TODO TODO TODO FIGURE OUT SOMETHING LIKE $category_id = get_category_by_slug('articles-by-our-therapists');
   $post = array(
     'post_title'    => $_POST['title'],
     'post_content'  => $_POST['content'],
@@ -725,6 +719,7 @@ function cmk_save_room_opening_post_if_submitted() {
   }
 
   // Add the content of the form to $post as an array
+  // TODO TODO TODO FIGURE OUT SOMETHING LIKE $category_id = get_category_by_slug('room-openings');
   $post = array(
     'post_title'    => $_POST['title'],
     'post_content'  => $_POST['content'],
@@ -819,7 +814,7 @@ function set_certain_users_as_forum_participants($user_id) {
   $user = get_user_by('ID', $user_id);
   if (isset($user->roles) && is_array($user->roles)) {
     $roles = ( array ) $user->roles;
-    if ( in_array( "administrator", $roles ) || in_array( "business_administrator", $roles )|| in_array( "therapist", $roles) ) {
+    if ( in_array( "administrator", $roles ) || in_array( "business_administrator", $roles ) || in_array( "store_administrator", $roles )|| in_array( "therapist", $roles) ) {
       $new_role_forum_role="bbp_participant";
       bbp_set_user_role( $user_id, $new_role_forum_role );
     }
@@ -1035,6 +1030,20 @@ function _cmk_display_orders_pending_payment(){
   }
 }
 
+
+
+// **************************************** NOTE order deposit calculator
+function cmk_deposit_calculator( $total_booking_cost, $deposit_ammount){
+  // deal with no deposit input
+  if ($deposit_ammount > 0.001) {
+    return $deposit_ammount;
+  } elseif ($deposit_ammount < 0) {
+    return $total_booking_cost * $deposit_ammount * -0.01;
+  } else {
+    return 0;
+  }
+}
+
 //******************************************* NOTE: Add custom fields to Order meta
 
 add_action( 'woocommerce_admin_order_data_after_order_details', 'misha_editable_order_meta_general' );
@@ -1059,13 +1068,15 @@ function misha_editable_order_meta_general( $order ){
         $event_end_date = tribe_get_end_date( $event_id, true, 'm-y-Y');
         $event_end_time = tribe_get_end_date( $event_id, true, 'g:i a');
       }
-      $total_booking_cost = get_post_meta( $order->get_id(), 'total_booking_cost', true );
+      $total_booking_cost = (get_post_meta( $order->get_id(), 'total_booking_cost', true ) > 0) ? get_post_meta( $order->get_id(), 'total_booking_cost', true ) : 0;
       $create_invoice_series = 0; //default to 0
       $studio_access = (get_post_meta( $event_id, 'studio_access', true) > 0) ? get_post_meta( $event_id, 'studio_access', true) : 15 ;
       $studio_egress = (get_post_meta( $event_id, 'studio_egress', true) > 0) ? get_post_meta( $event_id, 'studio_egress', true) : 15 ;
       $contract_language = get_post_meta( $event_id, 'contract_language', true );
 			$invoice_notes = get_post_meta( $order->get_id(), 'invoice_notes', true );
 			$include_contract = get_post_meta( $order->get_id(), 'include_contract', true );
+      $create_a_deposit = 0;
+      $deposit_ammount = (get_post_meta( $order->get_id(), 'deposit_ammount', true )) ? cmk_deposit_calculator( $total_booking_cost, get_post_meta( $order->get_id(), 'deposit_ammount', true )) : -30;
       $base_contract_page_id = 31417;
       $default_invoice_notes = 'We have approved your event at the Awakenings Wellness Center. Your invoice for this event is attached below with the Awakenings Studio Rental Agreement. Please make sure you read and understand the agreement as that is necessary for booking the space.';
 		?>
@@ -1113,16 +1124,9 @@ function misha_editable_order_meta_general( $order ){
       'value' => $event_id,
       'wrapper_class' => 'form-field-wide'
     ) );
-    woocommerce_wp_text_input( array(
-      'id' => 'total_booking_cost',
-      'label' => 'Total studio rental fee. If there are multiple payments what is the total studio rental fee? (for reference only)',
-      'description' => 'PLEASE add any charges in the ITEM section below this form section',
-      'value' => $total_booking_cost,
-      'wrapper_class' => 'form-field-wide'
-    ) );
     woocommerce_wp_radio( array(
       'id' => 'is_deposit',
-      'label' => 'Is this a deposit?',
+      'label' => 'Is this a deposit invoice?',
       'value' => $is_deposit,
       'options' => array(
         '' => 'No',
@@ -1131,9 +1135,39 @@ function misha_editable_order_meta_general( $order ){
       'style' => 'width:16px', // required for checkboxes and radio buttons
       'wrapper_class' => 'form-field-wide' // always add this class
     ) );
+    woocommerce_wp_text_input( array(
+      'id' => 'total_booking_cost',
+      'type'  => 'number',
+      'label' => 'Total studio rental fee: If there are multiple payments what is the total studio rental fee? (example: 200)',
+      'description' => 'PLEASE add any charges in the ITEM section below this form section',
+      'value' => $total_booking_cost,
+      'wrapper_class' => 'form-field-wide'
+    ) );
+    if(!$is_deposit){
+      woocommerce_wp_radio( array(
+        'id' => 'create_a_deposit',
+        'label' => 'Create a deposit along with this bill?',
+        'value' => $create_a_deposit,
+        'options' => array(
+          '' => 'No',
+          '1' => 'Yes'
+        ),
+        'style' => 'width:16px', // required for checkboxes and radio buttons
+        'wrapper_class' => 'form-field-wide' // always add this class
+      ) );
+      woocommerce_wp_text_input( array(
+        'id' => 'deposit_ammount',
+        'type'  => 'number',
+        'label' => 'Deposit amount. Use negative numbers for percentages (-30 for 30%) and positive numbers for dollar ammounts (1200 for $1200)',
+        'value' => $deposit_ammount,
+        'wrapper_class' => 'form-field-wide'
+      ) );
+    }
+
+
     woocommerce_wp_radio( array(
       'id' => 'create_invoice_series',
-      'label' => 'If this is part of an event series do you want to create an invoice (order) for each event of the series?',
+      'label' => 'Create an invoice (order) for each event of the series?',
       'value' => $create_invoice_series,
       'options' => array(
         '' => 'No',
@@ -1144,7 +1178,7 @@ function misha_editable_order_meta_general( $order ){
     ) );
     woocommerce_wp_radio( array(
       'id' => 'studio_access',
-      'label' => 'How much time does the client have to setup before event start time?',
+      'label' => 'Studio Access: How much time does the client have to setup before event start time?',
       'value' => $studio_access,
       'options' => array(
         '15' => '15 minutes',
@@ -1160,7 +1194,7 @@ function misha_editable_order_meta_general( $order ){
     ) );
     woocommerce_wp_radio( array(
       'id' => 'studio_egress',
-      'label' => 'How long after the event does the studio need to be empty?',
+      'label' => 'Studio Egress: How long after the event does the studio need to be empty?',
       'value' => $studio_egress,
       'options' => array(
         '15' => '15 minutes',
@@ -1227,14 +1261,53 @@ function misha_editable_order_meta_general( $order ){
 
 
 //NOTE this function saves the meta for an order and to it's connected event and returns an $event_id
-function misha_save_general_details( $ord_id ){
-	update_post_meta( $ord_id, 'is_event', wc_clean( $_POST[ 'is_event' ] ) );
-	update_post_meta( $ord_id, 'is_deposit', wc_clean( $_POST[ 'is_deposit' ] ) );
-	update_post_meta( $ord_id, 'event_id', wc_clean( $_POST[ 'event_id' ] ) );
-	update_post_meta( $ord_id, 'total_booking_cost', wc_clean( $_POST[ 'total_booking_cost' ] ) );
-
-
+function misha_save_general_details( $ord_id, $total_booking_cost, $deposit_ammount){
   $event_id = wc_clean( $_POST[ 'event_id' ] );
+  $is_deposit = wc_clean( $_POST[ 'is_deposit' ] );
+  cmk_get_recurring_event_ids( $ord_id, $event_id);
+
+  //if its not a deposit add a remainder fee. if is a deposit add a deposit fee NOTE this is used when you are creating a deposit from scratch but it is NOT ADVISED BECAUSE THE MASTER ORDER WONT HAVE ANY RECORD OF IT. IT IS BETTER TO CREATE A MASTER ORDER AND THE DEPOSIT AT THE SAME TIME.
+  if (!$is_deposit){
+    $remainder_ammount = $total_booking_cost - $deposit_ammount;
+    $main_order = new WC_Order($ord_id);
+    //remove previous fees to make room for new
+    $main_order->remove_order_items();
+    $remainder_fee = new WC_Order_Item_Fee();
+    $remainder_fee->set_name( "Remainder Fee" );
+    $remainder_fee->set_amount( $remainder_ammount );
+    $remainder_fee->set_tax_class( '' );
+    $remainder_fee->set_tax_status( 'none' );
+    $remainder_fee->set_total( $remainder_ammount );
+
+    // Add Fee item to the order
+    $main_order->add_item( $remainder_fee );
+    $main_order->calculate_totals();
+    $main_order->update_status('pending');
+    $main_order->save();
+  } elseif ($is_deposit){
+    $main_order = new WC_Order($ord_id);
+    //remove previous fees to make room for new
+    $main_order->remove_order_items();
+    $deposit_fee = new WC_Order_Item_Fee();
+    $deposit_fee->set_name( "Deposit Fee" );
+    $deposit_fee->set_amount( $deposit_ammount );
+    $deposit_fee->set_tax_class( '' );
+    $deposit_fee->set_tax_status( 'none' );
+    $deposit_fee->set_total( $deposit_ammount );
+
+    // Add Fee item to the order
+    $main_order->add_item( $deposit_fee );
+    $main_order->calculate_totals();
+    $main_order->update_status('pending');
+    $main_order->save();
+  }
+
+  update_post_meta( $ord_id, 'is_event', wc_clean( $_POST[ 'is_event' ] ) );
+  update_post_meta( $ord_id, 'is_deposit', $is_deposit );
+  update_post_meta( $ord_id, 'event_id', wc_clean( $_POST[ 'event_id' ] ) );
+  update_post_meta( $ord_id, 'total_booking_cost', $total_booking_cost );
+  update_post_meta( $ord_id, 'deposit_ammount', $deposit_ammount );
+
   // NOTE: if event_id supplied is indeed an event post then save the name and date of the event TO THE ORDER (AS A FALLBACK AND FOR EMAILS)!
   if (tribe_is_event($event_id)) {
     $event_name = get_the_title( $event_id);
@@ -1290,7 +1363,72 @@ function cmk_get_recurring_event_ids( $order_id, $event_id ) {
 }
 
 // **************  NOTE NOTE NOTE USES PLUGIN WC DUPLICATE ORDER !!!
-// TODO send in CloneOrder instance (so that it's not being instantiated each time)
+// reference for fee instantiation https://stackoverflow.com/questions/53603746/add-a-fee-to-an-order-programmatically-in-woocommerce-3
+function cmk_create_event_order_deposit_invoice($original_order_id, $event_id, $cloneorder_object, $deposit_fee){
+
+  // NOTE NOTE NOTE clone order function from plugin pasted in here to get new id
+  $currentUser = wp_get_current_user();
+  $order_data =  array(
+        'post_type'     => 'shop_order',
+        'post_status'   => 'publish',
+        'ping_status'   => 'closed',
+        'parent_id'     => $original_order_id,
+        'post_author'   => $currentUser->ID,
+        'post_password' => uniqid( 'order_' )
+    );
+    $new_order_id = wp_insert_post( $order_data, true );
+    $new_order = new WC_Order($new_order_id);
+
+    if ( is_wp_error( $new_order_id ) ) {
+        add_action( 'admin_notices', array($this, 'clone__error'));
+    } else {
+
+    // NOTE NOTE NOTE this will copy all the data from the original order which will have the wrong event info that's fixed next
+    $cloneorder_object->cloned_order_data($new_order_id, $original_order_id);
+    // remove fees
+    $new_order->remove_order_items();
+    // Get a new instance of the WC_Order_Item_Fee Object
+    $item_fee = new WC_Order_Item_Fee();
+    $item_fee->set_name( "Deposit Fee" );
+    $item_fee->set_amount( $deposit_fee );
+    $item_fee->set_tax_class( '' );
+    $item_fee->set_tax_status( 'none' );
+    $item_fee->set_total( $deposit_fee );
+
+    // Add Fee item to the order
+    $new_order->add_item( $item_fee );
+
+    $new_order->calculate_totals();
+
+    $new_order->update_status('pending');
+
+    $new_order->save();
+
+
+    // Update metadata:
+
+      update_post_meta($original_order_id , 'deposit_id', $new_order_id );
+
+      update_post_meta($new_order_id , 'event_id', $event_id );
+      $event_name = get_the_title( $event_id);
+      update_post_meta( $new_order_id, 'event_name', wc_clean( $event_name ) );
+      $event_start_datetime = tribe_get_start_date( $event_id, true, 'Y-m-d H:i:s' );
+      update_post_meta( $new_order_id, 'event_start_datetime', wc_clean( $event_start_datetime ) );
+      $event_end_datetime = tribe_get_end_date( $event_id, true, 'Y-m-d H:i:s' );
+      update_post_meta( $new_order_id, 'event_end_datetime', wc_clean( $event_end_datetime ) );
+
+      update_post_meta( $new_order_id, 'is_event', wc_clean( $_POST[ 'is_event' ] ) );
+      update_post_meta( $new_order_id, 'is_deposit', 1 );
+      update_post_meta( $new_order_id, 'total_booking_cost', wc_clean( $_POST[ 'total_booking_cost' ] ) );
+      update_post_meta( $new_order_id, 'studio_access', wc_clean( $_POST[ 'studio_access' ] ) );
+      update_post_meta( $new_order_id, 'studio_egress', wc_clean( $_POST[ 'studio_egress' ] ) );
+      update_post_meta( $new_order_id, 'invoice_notes', wc_sanitize_textarea( $_POST[ 'invoice_notes' ] ) );
+      update_post_meta( $new_order_id, 'include_contract', wc_clean( $_POST[ 'include_contract' ] ) );
+      update_post_meta( $new_order_id, 'contract_language', ( $_POST[ 'contract_language' ] ) );
+  }
+  return $new_order_id;
+}
+// **************  NOTE NOTE NOTE USES PLUGIN WC DUPLICATE ORDER !!!
 function cmk_create_event_order_series_instance($original_order_id, $event_id, $cloneorder_object){
 
   // NOTE NOTE NOTE clone order function from plugin pasted in here to get new id
@@ -1341,12 +1479,24 @@ function cmk_create_event_order_series_instance($original_order_id, $event_id, $
   return $new_order_id;
 }
 
+
 // Save event invoice(s) data and meta data
 add_action( 'woocommerce_process_shop_order_meta', 'cmk_save_main_order_and_potentially_series' );
 
 function cmk_save_main_order_and_potentially_series( $ord_id ) {
+  $total_booking_cost = wc_clean( $_POST[ 'total_booking_cost' ] );
+  $deposit_ammount = cmk_deposit_calculator($total_booking_cost,  wc_clean( $_POST[ 'deposit_ammount' ] ));
+
   // saves main event invoice meta data and returns event id
-  $event_id = misha_save_general_details( $ord_id );
+  $event_id = misha_save_general_details( $ord_id , $total_booking_cost, $deposit_ammount);
+
+
+  if ($_POST[ 'create_a_deposit']){
+    $cloneorder_object = new CloneOrder;
+    cmk_create_event_order_deposit_invoice($ord_id, $event_id, $cloneorder_object, $deposit_ammount);
+  }
+
+  //NOTE NOTE create a string that we use in the invoice email function misha_add_email_order_meta
   $series_order_ids= array();
   if ($_POST[ 'create_invoice_series' ]) {
     $series_event_ids = cmk_get_recurring_event_ids( $ord_id, $event_id );
@@ -1393,9 +1543,14 @@ function misha_add_email_order_meta( $order_obj, $sent_to_admin, $plain_text ){
   $orders_events_children_ids = get_post_meta( $order_obj->get_order_number(), 'orders_events_children_ids', true);
   $orders_events_children_key_pairs = explode(", ",$orders_events_children_ids);
   $orders_events_children_ids_array = array();
-  for($i=0; $i < count($orders_events_children_key_pairs  ); $i++){
-    $key_pair = explode('|', $orders_events_children_key_pairs  [$i]);
-    $orders_events_children_ids_array[$key_pair [0]] = $key_pair [1];
+  $order_deposit_id = get_post_meta( $order_obj->get_order_number(), 'deposit_id', true);
+  $total_booking_cost = get_post_meta( $order_obj->get_order_number(), 'total_booking_cost', true);
+  $booking_ammount = get_post_meta( $order_obj->get_order_number(), 'booking_ammount', true);
+  if(!empty($orders_events_children_key_pairs)){
+    for($i=0; $i < count($orders_events_children_key_pairs  ); $i++){
+      $key_pair = explode('|', $orders_events_children_key_pairs  [$i]);
+      $orders_events_children_ids_array[$key_pair [0]] = $key_pair [1];
+    }
   }
 
 
@@ -1406,9 +1561,11 @@ function misha_add_email_order_meta( $order_obj, $sent_to_admin, $plain_text ){
 		echo '<h2>Event Invoice Information</h2>
 		<ul>';
     if ($is_deposit==1) {
-      echo '<li><strong>This is a deposit</strong> Yes</li>';
+      echo '<li><strong>This is a Deposit Invoice</strong></li>';
     } else {
-      echo '<li><strong>This is a deposit</strong> No</li>';
+      echo '<li><strong>This is the Main Invoice for this Event</strong></li>';
+      echo '<li><strong>The total cost of the event is: ' . $total_booking_cost . '</strong></li>';
+      echo '<li><strong>The deposit cost is: ' . $deposit_ammount . '</strong></li>';
     }
 		echo '<li><strong>Event name:</strong> ' . $event_name . '</li>
     <li><strong>Event ID:</strong> ' . $event_id . '</li>
@@ -1417,7 +1574,13 @@ function misha_add_email_order_meta( $order_obj, $sent_to_admin, $plain_text ){
     <li><strong>Event End:</strong> ' . date("Y-m-d g:i a",strtotime($event_end_datetime)) . '</li>
     <li><strong>Event Egress: </strong> ' . $studio_egress_datetime . ' - Please make sure to have the studio clean and ready for the next event at this date/time</li>
 		</ul>';
-    if(!empty($orders_events_children_ids_array)){
+    if(!empty($order_deposit_id)&&$is_deposit!=1){
+      $deposit_order = wc_get_order($order_deposit_id);
+      echo '<h3>Deposit Payment:</h3>';
+      echo '<li><strong>Online Payment Link: </strong>' . $deposit_order->get_checkout_payment_url() .'</li></ul>';
+      echo '<li><strong>Or mail check to: Awakenings LLC - 1016 SE 12th Avenue Portland, OR 97214</strong></li>';
+    }
+    if(!empty($orders_events_children_ids)){
       echo '<h3>Event Series Info and Payment Links</h3>';
       echo '<ul>';
       foreach($orders_events_children_ids_array as $loop_order_id => $loop_event_id){
@@ -1457,5 +1620,6 @@ function misha_add_email_order_meta( $order_obj, $sent_to_admin, $plain_text ){
 	}
 
 }
+
 
 ?>

@@ -24,7 +24,18 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @hooked WC_Emails::email_header() Output the email header
  */
-do_action( 'woocommerce_email_header', $email_heading, $email ); ?>
+do_action( 'woocommerce_email_header', $email_heading, $email );
+
+$order_id = $order->get_order_number();
+
+$deposit_id = (get_post_meta( $order_id, 'deposit_id', true)) ? get_post_meta( $order_id, 'deposit_id', true) : 0;
+if($deposit_id>0){
+	$deposit_order = new WC_Order($deposit_id);
+	$first_payment_link = $deposit_order->get_checkout_payment_url();
+} else {
+	$first_payment_link = $order->get_checkout_payment_url();
+}
+?>
 
 <?php /* translators: %s: Customer first name */ ?>
 <p><?php printf( esc_html__( 'Hi %s,', 'woocommerce' ), esc_html( $order->get_billing_first_name() ) ); ?></p>
@@ -34,6 +45,7 @@ do_action( 'woocommerce_email_header', $email_heading, $email ); ?>
 	<?php
 	// invoice_notes default: We have approved your event at the Awakenings. Your invoice for this event is attached below with the Awakenings Studio Rental Agreement. Please make sure you read and understand the agreement as that is necessary for booking the space.
 	echo '<p>' . $order->get_meta('invoice_notes') . '</p>';
+	echo '<p>';
 	printf(
 		wp_kses(
 			/* translators: %1$s Site title, %2$s Order pay link */
@@ -45,9 +57,9 @@ do_action( 'woocommerce_email_header', $email_heading, $email ); ?>
 			)
 		),
 		esc_html( get_bloginfo( 'name', 'display' ) ),
-		'<a href="' . esc_url( $order->get_checkout_payment_url() ) . '">' . esc_html__( 'Pay for this order', 'woocommerce' ) . '</a>'
+		'<a href="' . esc_url( $first_payment_link ) . '">' . esc_html__( 'Make payment', 'woocommerce' ) . '</a>'
 	);
-	echo '<br>';
+	echo '</p>';
 	echo '<p>Also, if you have not done so, please log into <a href="https://awakenings.org/login">your Awakenings.org dashboard </a> to provide an event description for our calendar.  We have found that events get much more attention and interest when they include a description and an image.  You can also activate registration management for your event. This will provide a registration box for participants to RSVP or buy tickets for the event. Once you login you can find your event under the "Manage / Create Events" tab or with this <a href="https://staging.awakenings.org/events/community/edit/event/'. $order->get_meta('event_id') . '" target="_blank">link<a/>. </p>
  <p>Thanks for supporting our wellness community with your great events and energy.  It is a pleasure to be able to host your activities at Awakenings!</p>
  <p>With warmth,</p>
@@ -74,7 +86,7 @@ do_action( 'woocommerce_email_header', $email_heading, $email ); ?>
  * @hooked WC_Structured_Data::output_structured_data() Outputs structured data.
  * @since 2.5.0
  */
-do_action( 'woocommerce_email_order_details', $order, $sent_to_admin, $plain_text, $email );
+// do_action( 'woocommerce_email_order_details', $order, $sent_to_admin, $plain_text, $email );
 
 /**
  * Hook for the woocommerce_email_order_meta.

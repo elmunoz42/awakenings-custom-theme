@@ -62,14 +62,18 @@
 					<td><?php $this->invoice_date(); ?></td>
 				</tr>
 				<?php } ?>
+				<?php if ( $this->order_number() ) { ?>
 				<tr class="order-number">
 					<th><?php _e( 'Order Number:', 'woocommerce-pdf-invoices-packing-slips' ); ?></th>
 					<td><?php $this->order_number(); ?></td>
 				</tr>
-				<tr class="order-date">
-					<th><?php _e( 'Order Date:', 'woocommerce-pdf-invoices-packing-slips' ); ?></th>
-					<td><?php $this->order_date(); ?></td>
+				<?php } ?>
+				<?php if ( $this->order->get_meta('total_booking_cost') ) { ?>
+				<tr class="order-cost">
+					<th><?php _e( 'Total Event Booking Cost: ', 'woocommerce-pdf-invoices-packing-slips' ); ?></th>
+					<td><?php echo '$' . $this->order->get_meta('total_booking_cost'); ?></td>
 				</tr>
+				<?php } ?>
 				<?php do_action( 'wpo_wcpdf_after_order_data', $this->type, $this->order ); ?>
 			</table>
 		</td>
@@ -77,63 +81,6 @@
 </table>
 
 <?php do_action( 'wpo_wcpdf_before_order_details', $this->type, $this->order ); ?>
-
-<table class="order-details">
-	<thead>
-		<tr>
-			<th class="product"><?php _e('Product', 'woocommerce-pdf-invoices-packing-slips' ); ?></th>
-			<th class="quantity"><?php _e('Quantity', 'woocommerce-pdf-invoices-packing-slips' ); ?></th>
-			<th class="price"><?php _e('Price', 'woocommerce-pdf-invoices-packing-slips' ); ?></th>
-		</tr>
-	</thead>
-	<tbody>
-		<?php $items = $this->get_order_items(); if( sizeof( $items ) > 0 ) : foreach( $items as $item_id => $item ) : ?>
-		<tr class="<?php echo apply_filters( 'wpo_wcpdf_item_row_class', $item_id, $this->type, $this->order, $item_id ); ?>">
-			<td class="product">
-				<?php $description_label = __( 'Description', 'woocommerce-pdf-invoices-packing-slips' ); // registering alternate label translation ?>
-				<span class="item-name"><?php echo $item['name']; ?></span>
-				<?php do_action( 'wpo_wcpdf_before_item_meta', $this->type, $item, $this->order  ); ?>
-				<span class="item-meta"><?php echo $item['meta']; ?></span>
-				<dl class="meta">
-					<?php $description_label = __( 'SKU', 'woocommerce-pdf-invoices-packing-slips' ); // registering alternate label translation ?>
-					<?php if( !empty( $item['sku'] ) ) : ?><dt class="sku"><?php _e( 'SKU:', 'woocommerce-pdf-invoices-packing-slips' ); ?></dt><dd class="sku"><?php echo $item['sku']; ?></dd><?php endif; ?>
-					<?php if( !empty( $item['weight'] ) ) : ?><dt class="weight"><?php _e( 'Weight:', 'woocommerce-pdf-invoices-packing-slips' ); ?></dt><dd class="weight"><?php echo $item['weight']; ?><?php echo get_option('woocommerce_weight_unit'); ?></dd><?php endif; ?>
-				</dl>
-				<?php do_action( 'wpo_wcpdf_after_item_meta', $this->type, $item, $this->order  ); ?>
-			</td>
-			<td class="quantity"><?php echo $item['quantity']; ?></td>
-			<td class="price"><?php echo $item['order_price']; ?></td>
-		</tr>
-		<?php endforeach; endif; ?>
-	</tbody>
-	<tfoot>
-		<tr class="no-borders">
-			<td class="no-borders">
-				<div class="customer-notes">
-					<?php do_action( 'wpo_wcpdf_before_customer_notes', $this->type, $this->order ); ?>
-					<?php if ( $this->get_shipping_notes() ) : ?>
-						<h3><?php _e( 'Customer Notes', 'woocommerce-pdf-invoices-packing-slips' ); ?></h3>
-						<?php $this->shipping_notes(); ?>
-					<?php endif; ?>
-					<?php do_action( 'wpo_wcpdf_after_customer_notes', $this->type, $this->order ); ?>
-				</div>
-			</td>
-			<td class="no-borders" colspan="2">
-				<table class="totals">
-					<tfoot>
-						<?php foreach( $this->get_woocommerce_totals() as $key => $total ) : ?>
-						<tr class="<?php echo $key; ?>">
-							<td class="no-borders"></td>
-							<th class="description"><?php echo $total['label']; ?></th>
-							<td class="price"><span class="totals-price"><?php echo $total['value']; ?></span></td>
-						</tr>
-						<?php endforeach; ?>
-					</tfoot>
-				</table>
-			</td>
-		</tr>
-	</tfoot>
-</table>
 
 <?php do_action( 'wpo_wcpdf_after_order_details', $this->type, $this->order ); ?>
 <br><br>
