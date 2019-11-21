@@ -788,7 +788,7 @@ function _cmk_users_emails(){
           foreach ( $organizers as $user ) {
             $output .= esc_html( $user->user_email ) . ', ';
           }
-          $output .= '">Message All Event Organizers</a></button><br>';
+          $output .= '">Message All Event Organizers</a></button>';
         }
         return $output;
       }
@@ -951,7 +951,7 @@ function _cmk_display_pending_events(){
             $output .= '<tr>
             <td class="tg-0lax"><a href="/wp-admin/post.php?post='. get_the_ID() . '&action=edit&classic-editor=1" target="_blank">'. get_the_title() .' </a></td>
             <td class="tg-0lax">'. get_the_ID() . '</td>
-            <td class="tg-0lax"><a href="/events/'. tribe_get_start_date( $event_id, false, 'Y-m-d').'" target="_blank">'. tribe_get_start_date() . '</a></td>
+            <td class="tg-0lax"><a href="/events/'. tribe_get_start_date( $event_id, false, 'Y-m-d').'" target="_blank">'. tribe_get_start_date( $event_id, false, 'M d Y g:i a') . '</a></td>
             <td class="tg-0lax"><a href="mailto:'. get_the_author_meta( 'user_email' ) .'">'. get_the_author() . '<a/></td>
             <td class="tg-0lax">'. _cmk_get_payment_status($event_id) . '</td>
             <td class="tg-0lax"><a href="/wp-admin/post-new.php?post_type=shop_order" target="_blank">CREATE INVOICE</a></td>
@@ -1574,12 +1574,19 @@ function misha_add_email_order_meta( $order_obj, $sent_to_admin, $plain_text ){
     <li><strong>Event End:</strong> ' . date("Y-m-d g:i a",strtotime($event_end_datetime)) . '</li>
     <li><strong>Event Egress: </strong> ' . $studio_egress_datetime . ' - Please make sure to have the studio clean and ready for the next event at this date/time</li>
 		</ul>';
+
+    // NOTE: add remainder for current order.
     if(!empty($order_deposit_id)&&$is_deposit!=1){
       $deposit_order = wc_get_order($order_deposit_id);
       echo '<h3>Deposit Payment:</h3>';
       echo '<li><strong>Online Payment Link: </strong>' . $deposit_order->get_checkout_payment_url() .'</li></ul>';
       echo '<li><strong>Or mail check to: Awakenings LLC - 1016 SE 12th Avenue Portland, OR 97214</strong></li>';
     }
+
+    echo '<h3>Remainder Payment:</h3>';
+    echo '<li><strong>Online Payment Link: </strong>' . $order_obj->get_checkout_payment_url() .'</li></ul>';
+    echo '<li><strong>Or mail check to: Awakenings LLC - 1016 SE 12th Avenue Portland, OR 97214</strong></li>';
+
     if(!empty($orders_events_children_ids)){
       echo '<h3>Event Series Info and Payment Links</h3>';
       echo '<ul>';
@@ -1601,6 +1608,7 @@ function misha_add_email_order_meta( $order_obj, $sent_to_admin, $plain_text ){
         echo '<li>Event End Date/Time: '. $loop_event_end_datetime_pretty . '</li>';
         echo '<li>Studio Egress Day/Time: '. $loop_studio_egress_datetime . '</li>';
         echo '<li>Payment Link: '. $loop_order->get_checkout_payment_url() .'</li></ul>';
+        echo '<br>';
       }
       echo '</ul>';
 
