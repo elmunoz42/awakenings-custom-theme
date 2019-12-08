@@ -925,6 +925,7 @@ function _cmk_get_payment_status($this_event_id){
 }
 
 function _cmk_display_pending_events(){
+  // var_dump(_cmk_get_orders_needing_reminder());
   if( is_user_logged_in() ) {
     $user = wp_get_current_user();
     if (isset($user->roles) && is_array($user->roles)) {
@@ -983,6 +984,7 @@ function _cmk_get_pending_orders(){
 }
 
 function _cmk_display_orders_pending_payment(){
+
   if( is_user_logged_in() ) {
     $user = wp_get_current_user();
     if (isset($user->roles) && is_array($user->roles)) {
@@ -1446,8 +1448,7 @@ function cmk_create_event_order_series_instance($original_order_id, $event_id, $
     if ( is_wp_error( $new_order_id ) ) {
         add_action( 'admin_notices', array($this, 'clone__error'));
     } else {
-    // NOTE NOTE NOTE get plugin class so we can use functions
-    // $cloneorder_object = new CloneOrder;
+  
     // NOTE NOTE NOTE this will copy all the data from the original order which will have the wrong event info that's fixed next
     $cloneorder_object->cloned_order_data($new_order_id, $original_order_id);
     // update status
@@ -1629,5 +1630,102 @@ function misha_add_email_order_meta( $order_obj, $sent_to_admin, $plain_text ){
 
 }
 
+// Automated EMAILS // Action is triggered by WP Control plugin that manages Cron jobs. alternatively we could hook into woocommerce_tracker_send_event. Let's try the plugin first, and then hook second.
+add_action( 'cmk_event_deposit_reminder', '_cmk_event_deposit_reminder' );
 
+function _cmk_get_orders_needing_reminder() {
+  global $woocommerce;
+  // days_delay is added so that if an order is created for a quickly upcoming event they don't get a reminder until x days later.
+  $days_delay = 5;
+  $today = strtotime('now');
+  $one_day    = 24 * 60 * 60;
+  $unpaid_orders = wc_get_orders( array(
+      'limit'        => -1,
+      'status'       => 'pending',
+      'date_created' => '<' . ( $today - ($days_delay * $one_day) ),
+  ) );
+  $unpaid_orders_with_events_within_30_days = array();
+
+  $date_check = strtotime('+30 days'); //today plus 30 days
+  foreach ($unpaid_orders as $unpaid_order) {
+    $event_start_datetime = strtotime(get_post_meta( $unpaid_order->get_order_number(), 'event_start_datetime', true ));
+    // if event start time is after today and before the date check add to the array
+    if ($event_start_datetime > $today && $date_check > $event_start_datetime) {
+      array_push($unpaid_orders_with_events_within_30_days, $unpaid_order->get_order_number());
+      // maybe change order status to on-hold?
+    }
+
+  }
+  return $unpaid_orders_with_events_within_30_days;
+}
+
+function _cmk_event_deposit_reminder() {
+  global $woocommerce;
+  $orders_needing_reminder = _cmk_get_orders_needing_reminder();
+  if ( sizeof($orders_needing_reminder) > 0 ) {
+      $reminder_text = __("Payment reminder email sent to customer $today.", "woocommerce");
+
+      foreach ( $orders_needing_reminder as $order_needing_reminder ) {
+          $order_needing_reminder->update_meta_data( '_reminder_sent', true );
+          $order_needing_reminder->update_status( 'reminder', $reminder_text );
+          $order_needing_reminder->update_status( 'on-hold' );
+
+          $wc_emails = WC()->mailer()->get_emails(); // Get all WC_emails objects instances
+          $wc_emails['WC_Email_Customer_On_Hold_Order']->trigger( $order_needing_reminder->get_id() ); // Send email
+      }
+  }
+}
+
+
+// Automated email reminders STACKEXCHANGE
+// add_action( 'restrict_manage_posts', 'on_hold_payment_reminder' );
+// function on_hold_payment_reminder() {
+//     global $pagenow, $post_type;
+//
+//     if( 'shop_order' === $post_type && 'edit.php' === $pagenow
+//         && get_option( 'unpaid_orders_reminder_daily_process' ) < time() ) :
+//
+//     $days_delay = 2; // 48 hours
+//     $one_day    = 24 * 60 * 60;
+//     $today      = strtotime( date('Y-m-d') );
+//
+//     $unpaid_orders = (array) wc_get_orders( array(
+//         'limit'        => -1,
+//         'status'       => 'on-hold',
+//         'date_created' => '<' . ( $today - ($days_delay * $one_day) ),
+//     ) );
+//
+//     if ( sizeof($unpaid_orders) > 0 ) {
+//         $reminder_text = __("Payment reminder email sent to customer $today.", "woocommerce");
+//
+//         foreach ( $unpaid_orders as $order ) {
+//             $order->update_meta_data( '_send_on_hold', true );
+//             $order->update_status( 'reminder', $reminder_text );
+//
+//             $wc_emails = WC()->mailer()->get_emails(); // Get all WC_emails objects instances
+//             $wc_emails['WC_Email_Customer_On_Hold_Order']->trigger( $order->get_id() ); // Send email
+//         }
+//     }
+//     update_option( 'unpaid_orders_reminder_daily_process', $today + $one_day );
+//
+//     endif;
+// }
+//
+//
+// add_action ( 'woocommerce_email_order_details', 'on_hold_payment_reminder_notification', 5, 4 );
+// function on_hold_payment_reminder_notification( $order, $sent_to_admin, $plain_text, $email ){
+//     if ( 'customer_on_hold_order' == $email->id && $order->get_meta('_send_on_hold') ){
+//         $order_id     = $order->get_id();
+//         $order_link   = wc_get_page_permalink('myaccount').'view-order/'.$order_id.'/';
+//         $order_number = $order->get_order_number();
+//
+//         echo '<h2>'.__("Do not forget about your order.").'</h2>
+//         <p>'.sprintf( __("CUSTOM MESSAGE HERE… %s"),
+//             '<a href="'.$order_link.'">'.__("Your My account order #").$order_number.'<a>'
+//         ) .'</p>';
+//
+//         $order->delete_meta_data('_send_on_hold');
+//         $order->save();
+//     }
+// }
 ?>
