@@ -1489,12 +1489,14 @@ function cmk_save_main_order_and_potentially_series( $ord_id ) {
   $total_booking_cost = wc_clean( $_POST[ 'total_booking_cost' ] );
   $deposit_ammount = cmk_deposit_calculator($total_booking_cost,  wc_clean( $_POST[ 'deposit_ammount' ] ));
   $order = new WC_Order($ord_id);
-  // TODO Figure out why get customer id not working!!!
-  $customer_id = $order->get_customer_id();
   // saves main event invoice meta data and returns event id
   $event_id = misha_save_general_details( $ord_id, $total_booking_cost, $deposit_ammount);
+  // TODO Figure out why get customer id not working!!!
+  $customer_id = ($order->get_customer_id()) ? $order->get_customer_id() : intval( $_POST[ 'customer_user' ] );
+  $order->set_customer_id( $customer_id );
+  $order->save();
   $cloneorder_object = new CloneOrder;
-
+  update_post_meta( $ord_id, 'debug', $customer_id );
   if ($_POST[ 'create_a_deposit']){
     cmk_create_event_order_deposit_invoice($ord_id, $event_id, $cloneorder_object, $deposit_ammount, $customer_id);
   }
