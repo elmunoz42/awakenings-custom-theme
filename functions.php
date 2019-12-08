@@ -1365,7 +1365,7 @@ function cmk_get_recurring_event_ids( $order_id, $event_id ) {
 
 // **************  NOTE NOTE NOTE USES PLUGIN WC DUPLICATE ORDER !!!
 // reference for fee instantiation https://stackoverflow.com/questions/53603746/add-a-fee-to-an-order-programmatically-in-woocommerce-3
-function cmk_create_event_order_deposit_invoice($original_order_id, $event_id, $cloneorder_object, $deposit_fee){
+function cmk_create_event_order_deposit_invoice($original_order_id, $event_id, $cloneorder_object, $deposit_fee, $customer_id){
 
   // NOTE NOTE NOTE clone order function from plugin pasted in here to get new id
   $currentUser = wp_get_current_user();
@@ -1377,17 +1377,17 @@ function cmk_create_event_order_deposit_invoice($original_order_id, $event_id, $
         'post_author'   => $currentUser->ID,
         'post_password' => uniqid( 'order_' )
     );
-    $new_order_id = wp_insert_post( $order_data, true );
-    $new_order = new WC_Order($new_order_id);
+    $deposit_order_id = wp_insert_post( $order_data, true );
+    $deposit_order = new WC_Order($deposit_order_id);
 
-    if ( is_wp_error( $new_order_id ) ) {
+    if ( is_wp_error( $deposit_order_id ) ) {
         add_action( 'admin_notices', array($this, 'clone__error'));
     } else {
 
     // NOTE NOTE NOTE this will copy all the data from the original order which will have the wrong event info that's fixed next
-    $cloneorder_object->cloned_order_data($new_order_id, $original_order_id);
+    $cloneorder_object->cloned_order_data($deposit_order_id, $original_order_id);
     // remove fees
-    $new_order->remove_order_items();
+    $deposit_order->remove_order_items();
     // Get a new instance of the WC_Order_Item_Fee Object
     $item_fee = new WC_Order_Item_Fee();
     $item_fee->set_name( "Deposit Fee" );
@@ -1397,40 +1397,40 @@ function cmk_create_event_order_deposit_invoice($original_order_id, $event_id, $
     $item_fee->set_total( $deposit_fee );
 
     // Add Fee item to the order
-    $new_order->add_item( $item_fee );
+    $deposit_order->add_item( $item_fee );
+    // $deposit_order->set_customer_id( $customer_id );
 
-    $new_order->calculate_totals();
+    $deposit_order->calculate_totals();
 
-    $new_order->update_status('pending');
+    $deposit_order->update_status('pending');
 
-    $new_order->save();
-
+    $deposit_order->set_customer_id( $customer_id );
 
     // Update metadata:
 
-      update_post_meta($original_order_id , 'deposit_id', $new_order_id );
+      update_post_meta($original_order_id , 'deposit_id', $deposit_order_id );
 
-      update_post_meta($new_order_id , 'event_id', $event_id );
+      update_post_meta($deposit_order_id , 'event_id', $event_id );
       $event_name = get_the_title( $event_id);
-      update_post_meta( $new_order_id, 'event_name', wc_clean( $event_name ) );
+      update_post_meta( $deposit_order_id, 'event_name', wc_clean( $event_name ) );
       $event_start_datetime = tribe_get_start_date( $event_id, true, 'Y-m-d H:i:s' );
-      update_post_meta( $new_order_id, 'event_start_datetime', wc_clean( $event_start_datetime ) );
+      update_post_meta( $deposit_order_id, 'event_start_datetime', wc_clean( $event_start_datetime ) );
       $event_end_datetime = tribe_get_end_date( $event_id, true, 'Y-m-d H:i:s' );
-      update_post_meta( $new_order_id, 'event_end_datetime', wc_clean( $event_end_datetime ) );
+      update_post_meta( $deposit_order_id, 'event_end_datetime', wc_clean( $event_end_datetime ) );
 
-      update_post_meta( $new_order_id, 'is_event', wc_clean( $_POST[ 'is_event' ] ) );
-      update_post_meta( $new_order_id, 'is_deposit', 1 );
-      update_post_meta( $new_order_id, 'total_booking_cost', wc_clean( $_POST[ 'total_booking_cost' ] ) );
-      update_post_meta( $new_order_id, 'studio_access', wc_clean( $_POST[ 'studio_access' ] ) );
-      update_post_meta( $new_order_id, 'studio_egress', wc_clean( $_POST[ 'studio_egress' ] ) );
-      update_post_meta( $new_order_id, 'invoice_notes', wc_sanitize_textarea( $_POST[ 'invoice_notes' ] ) );
-      update_post_meta( $new_order_id, 'include_contract', wc_clean( $_POST[ 'include_contract' ] ) );
-      update_post_meta( $new_order_id, 'contract_language', ( $_POST[ 'contract_language' ] ) );
+      update_post_meta( $deposit_order_id, 'is_event', wc_clean( $_POST[ 'is_event' ] ) );
+      update_post_meta( $deposit_order_id, 'is_deposit', 1 );
+      update_post_meta( $deposit_order_id, 'total_booking_cost', wc_clean( $_POST[ 'total_booking_cost' ] ) );
+      update_post_meta( $deposit_order_id, 'studio_access', wc_clean( $_POST[ 'studio_access' ] ) );
+      update_post_meta( $deposit_order_id, 'studio_egress', wc_clean( $_POST[ 'studio_egress' ] ) );
+      update_post_meta( $deposit_order_id, 'invoice_notes', wc_sanitize_textarea( $_POST[ 'invoice_notes' ] ) );
+      update_post_meta( $deposit_order_id, 'include_contract', wc_clean( $_POST[ 'include_contract' ] ) );
+      update_post_meta( $deposit_order_id, 'contract_language', ( $_POST[ 'contract_language' ] ) );
   }
-  return $new_order_id;
+  return $deposit_order_id;
 }
 // **************  NOTE NOTE NOTE USES PLUGIN WC DUPLICATE ORDER !!!
-function cmk_create_event_order_series_instance($original_order_id, $event_id, $cloneorder_object){
+function cmk_create_event_order_series_instance($original_order_id, $event_id, $cloneorder_object, $customer_id){
 
   // NOTE NOTE NOTE clone order function from plugin pasted in here to get new id
   $currentUser = wp_get_current_user();
@@ -1443,16 +1443,17 @@ function cmk_create_event_order_series_instance($original_order_id, $event_id, $
         'post_password' => uniqid( 'order_' )
     );
     $new_order_id = wp_insert_post( $order_data, true );
-
     $new_order = new WC_Order($new_order_id);
+
     if ( is_wp_error( $new_order_id ) ) {
         add_action( 'admin_notices', array($this, 'clone__error'));
     } else {
-  
     // NOTE NOTE NOTE this will copy all the data from the original order which will have the wrong event info that's fixed next
     $cloneorder_object->cloned_order_data($new_order_id, $original_order_id);
     // update status
     $new_order->update_status('pending', 'order_note');
+
+    $new_order->set_customer_id( $customer_id );
     // Update metadata:
       update_post_meta($new_order_id , 'event_id', $event_id );
       $event_name = get_the_title( $event_id);
@@ -1487,24 +1488,24 @@ function cmk_save_main_order_and_potentially_series( $ord_id ) {
 
   $total_booking_cost = wc_clean( $_POST[ 'total_booking_cost' ] );
   $deposit_ammount = cmk_deposit_calculator($total_booking_cost,  wc_clean( $_POST[ 'deposit_ammount' ] ));
-
+  $order = new WC_Order($ord_id);
+  // TODO Figure out why get customer id not working!!!
+  $customer_id = $order->get_customer_id();
   // saves main event invoice meta data and returns event id
   $event_id = misha_save_general_details( $ord_id, $total_booking_cost, $deposit_ammount);
-
+  $cloneorder_object = new CloneOrder;
 
   if ($_POST[ 'create_a_deposit']){
-    $cloneorder_object = new CloneOrder;
-    cmk_create_event_order_deposit_invoice($ord_id, $event_id, $cloneorder_object, $deposit_ammount);
+    cmk_create_event_order_deposit_invoice($ord_id, $event_id, $cloneorder_object, $deposit_ammount, $customer_id);
   }
 
   //NOTE NOTE create a string that we use in the invoice email function misha_add_email_order_meta
   $series_order_ids= array();
   if ($_POST[ 'create_invoice_series' ]) {
     $series_event_ids = cmk_get_recurring_event_ids( $ord_id, $event_id );
-    $cloneorder_object = new CloneOrder;
     foreach ($series_event_ids as $series_event_id) {
       //runs create event order and returns the new id connected to the respective event
-      $new_order_id = cmk_create_event_order_series_instance($ord_id, $series_event_id, $cloneorder_object);
+      $new_order_id = cmk_create_event_order_series_instance($ord_id, $series_event_id, $cloneorder_object, $customer_id);
       array_push($series_order_ids, $new_order_id .'|' . $series_event_id);
     }
     update_post_meta( $ord_id, 'orders_events_children_ids', implode(", ", $series_order_ids ));
@@ -1536,16 +1537,17 @@ function misha_add_email_order_meta( $order_obj, $sent_to_admin, $plain_text ){
 	$studio_access = get_post_meta( $order_obj->get_order_number(), 'studio_access', true );
   // convert event start into seconds and subtract access time
   $event_start_seconds = strtotime($event_start_datetime) - ($studio_access * 60);
-	$studio_access_datetime = date("Y-m-d g:i a", $event_start_seconds);
+	$studio_access_datetime = date("D F j Y g:i a", $event_start_seconds);
 	$event_end_datetime = get_post_meta( $order_obj->get_order_number(), 'event_end_datetime', true );
   $studio_egress =  get_post_meta( $order_obj->get_order_number(), 'studio_egress', true );
   $event_end_seconds = strtotime($event_end_datetime) + ($studio_egress * 60);
-	$studio_egress_datetime = date("Y-m-d g:i a", $event_end_seconds);
+	$studio_egress_datetime = date("D F j Y g:i a", $event_end_seconds);
   $orders_events_children_ids = get_post_meta( $order_obj->get_order_number(), 'orders_events_children_ids', true);
   $orders_events_children_key_pairs = explode(", ",$orders_events_children_ids);
   $orders_events_children_ids_array = array();
   $order_deposit_id = get_post_meta( $order_obj->get_order_number(), 'deposit_id', true);
   $total_booking_cost = get_post_meta( $order_obj->get_order_number(), 'total_booking_cost', true);
+  $deposit_ammount =  get_post_meta( $order_obj->get_order_number(), 'deposit_ammount', true);
   $booking_ammount = get_post_meta( $order_obj->get_order_number(), 'booking_ammount', true);
   if(!empty($orders_events_children_key_pairs)){
     for($i=0; $i < count($orders_events_children_key_pairs  ); $i++){
@@ -1565,25 +1567,22 @@ function misha_add_email_order_meta( $order_obj, $sent_to_admin, $plain_text ){
       echo '<li><strong>This is a Deposit Invoice</strong></li>';
     } else {
       echo '<li><strong>This is the Main Invoice for this Event</strong></li>';
-      echo '<li><strong>The total cost of the event is: ' . $total_booking_cost . '</strong></li>';
-      echo '<li><strong>The deposit cost is: ' . $deposit_ammount . '</strong></li>';
+      echo '<li><strong>The total cost of the event is: $' . $total_booking_cost . '</strong></li>';
+      echo '<li><strong>The deposit cost is: $' . $deposit_ammount . '</strong></li>';
     }
 		echo '<li><strong>Event name:</strong> ' . $event_name . '</li>
     <li><strong>Event ID:</strong> ' . $event_id . '</li>
     <li><strong>Studio Access:</strong> ' . $studio_access_datetime . '</li>
-    <li><strong>Event Start:</strong> ' . date("Y-m-d g:i a",strtotime($event_start_datetime)) . '</li>
-    <li><strong>Event End:</strong> ' . date("Y-m-d g:i a",strtotime($event_end_datetime)) . '</li>
+    <li><strong>Event Start:</strong> ' . date("D F j Y g:i a",strtotime($event_start_datetime)) . '</li>
+    <li><strong>Event End:</strong> ' . date("D F j Y g:i a",strtotime($event_end_datetime)) . '</li>
     <li><strong>Event Egress: </strong> ' . $studio_egress_datetime . ' - Please make sure to have the studio clean and ready for the next event at this date/time</li>
 		</ul>';
-
-    // NOTE: add remainder for current order.
     if(!empty($order_deposit_id)&&$is_deposit!=1){
       $deposit_order = wc_get_order($order_deposit_id);
       echo '<h3>Deposit Payment:</h3>';
       echo '<li><strong>Online Payment Link: </strong>' . $deposit_order->get_checkout_payment_url() .'</li></ul>';
       echo '<li><strong>Or mail check to: Awakenings LLC - 1016 SE 12th Avenue Portland, OR 97214</strong></li>';
     }
-
     echo '<h3>Remainder Payment:</h3>';
     echo '<li><strong>Online Payment Link: </strong>' . $order_obj->get_checkout_payment_url() .'</li></ul>';
     echo '<li><strong>Or mail check to: Awakenings LLC - 1016 SE 12th Avenue Portland, OR 97214</strong></li>';
@@ -1594,15 +1593,15 @@ function misha_add_email_order_meta( $order_obj, $sent_to_admin, $plain_text ){
       foreach($orders_events_children_ids_array as $loop_order_id => $loop_event_id){
         $loop_order = wc_get_order($loop_order_id );
         $loop_event_start_datetime = get_post_meta( $loop_order_id, 'event_start_datetime', true );
-        $loop_event_start_datetime_pretty=date("Y-m-d g:i a",strtotime($loop_event_start_datetime));
+        $loop_event_start_datetime_pretty=date("D F j Y g:i a",strtotime($loop_event_start_datetime));
         $loop_studio_access = get_post_meta( $loop_order_id, 'studio_access', true );
         $loop_event_start_seconds = strtotime($loop_event_start_datetime) - ($loop_studio_access * 60);
-        $loop_studio_access_datetime = date("Y-m-d g:i a", $loop_event_start_seconds);
+        $loop_studio_access_datetime = date("D F j Y g:i a", $loop_event_start_seconds);
         $loop_event_end_datetime = get_post_meta( $loop_order_id, 'event_end_datetime', true );
-        $loop_event_end_datetime_pretty=date("Y-m-d g:i a",strtotime($loop_event_end_datetime));
+        $loop_event_end_datetime_pretty=date("D F j Y g:i a",strtotime($loop_event_end_datetime));
         $loop_studio_egress =  get_post_meta( $loop_order_id, 'studio_egress', true );
         $loop_event_end_seconds = strtotime($loop_event_end_datetime) + ($loop_studio_egress * 60);
-        $loop_studio_egress_datetime = date("Y-m-d g:i a", $loop_event_end_seconds);
+        $loop_studio_egress_datetime = date("D F j Y g:i a", $loop_event_end_seconds);
         echo '<li><strong>Event Start Date/Time : '. $loop_event_start_datetime_pretty . '<strong></li>';
         echo '<ul>';
         echo '<li>Studio Access Day/Time: '. $loop_studio_access_datetime . '</li>';
@@ -1630,13 +1629,14 @@ function misha_add_email_order_meta( $order_obj, $sent_to_admin, $plain_text ){
 
 }
 
+
 // Automated EMAILS // Action is triggered by WP Control plugin that manages Cron jobs. alternatively we could hook into woocommerce_tracker_send_event. Let's try the plugin first, and then hook second.
 add_action( 'cmk_event_deposit_reminder', '_cmk_event_deposit_reminder' );
 
 function _cmk_get_orders_needing_reminder() {
   global $woocommerce;
   // days_delay is added so that if an order is created for a quickly upcoming event they don't get a reminder until x days later.
-  $days_delay = 5;
+  $days_delay = 0;
   $today = strtotime('now');
   $one_day    = 24 * 60 * 60;
   $unpaid_orders = wc_get_orders( array(
@@ -1661,71 +1661,23 @@ function _cmk_get_orders_needing_reminder() {
 
 function _cmk_event_deposit_reminder() {
   global $woocommerce;
-  $orders_needing_reminder = _cmk_get_orders_needing_reminder();
-  if ( sizeof($orders_needing_reminder) > 0 ) {
+  $today = strtotime('now');
+  $orders_needing_reminder_ids = _cmk_get_orders_needing_reminder();
+  if ( sizeof($orders_needing_reminder_ids) > 0 ) {
       $reminder_text = __("Payment reminder email sent to customer $today.", "woocommerce");
 
-      foreach ( $orders_needing_reminder as $order_needing_reminder ) {
-          $order_needing_reminder->update_meta_data( '_reminder_sent', true );
-          $order_needing_reminder->update_status( 'reminder', $reminder_text );
-          $order_needing_reminder->update_status( 'on-hold' );
-
+      foreach ( $orders_needing_reminder_ids as $order_needing_reminder_id ) {
+          //get and update order
+          $order = new WC_Order( $order_needing_reminder_id );
+          $order->update_meta_data( '_reminder_sent', true );
+          $order->update_status( 'reminder', $reminder_text );
+          // $order->update_status( 'on-hold' );
+          $order->save();
+          // get and send email
           $wc_emails = WC()->mailer()->get_emails(); // Get all WC_emails objects instances
-          $wc_emails['WC_Email_Customer_On_Hold_Order']->trigger( $order_needing_reminder->get_id() ); // Send email
+          $wc_emails['WC_Email_Customer_On_Hold_Order']->trigger( $order_needing_reminder_id ); // Send email
       }
   }
 }
 
-
-// Automated email reminders STACKEXCHANGE
-// add_action( 'restrict_manage_posts', 'on_hold_payment_reminder' );
-// function on_hold_payment_reminder() {
-//     global $pagenow, $post_type;
-//
-//     if( 'shop_order' === $post_type && 'edit.php' === $pagenow
-//         && get_option( 'unpaid_orders_reminder_daily_process' ) < time() ) :
-//
-//     $days_delay = 2; // 48 hours
-//     $one_day    = 24 * 60 * 60;
-//     $today      = strtotime( date('Y-m-d') );
-//
-//     $unpaid_orders = (array) wc_get_orders( array(
-//         'limit'        => -1,
-//         'status'       => 'on-hold',
-//         'date_created' => '<' . ( $today - ($days_delay * $one_day) ),
-//     ) );
-//
-//     if ( sizeof($unpaid_orders) > 0 ) {
-//         $reminder_text = __("Payment reminder email sent to customer $today.", "woocommerce");
-//
-//         foreach ( $unpaid_orders as $order ) {
-//             $order->update_meta_data( '_send_on_hold', true );
-//             $order->update_status( 'reminder', $reminder_text );
-//
-//             $wc_emails = WC()->mailer()->get_emails(); // Get all WC_emails objects instances
-//             $wc_emails['WC_Email_Customer_On_Hold_Order']->trigger( $order->get_id() ); // Send email
-//         }
-//     }
-//     update_option( 'unpaid_orders_reminder_daily_process', $today + $one_day );
-//
-//     endif;
-// }
-//
-//
-// add_action ( 'woocommerce_email_order_details', 'on_hold_payment_reminder_notification', 5, 4 );
-// function on_hold_payment_reminder_notification( $order, $sent_to_admin, $plain_text, $email ){
-//     if ( 'customer_on_hold_order' == $email->id && $order->get_meta('_send_on_hold') ){
-//         $order_id     = $order->get_id();
-//         $order_link   = wc_get_page_permalink('myaccount').'view-order/'.$order_id.'/';
-//         $order_number = $order->get_order_number();
-//
-//         echo '<h2>'.__("Do not forget about your order.").'</h2>
-//         <p>'.sprintf( __("CUSTOM MESSAGE HERE… %s"),
-//             '<a href="'.$order_link.'">'.__("Your My account order #").$order_number.'<a>'
-//         ) .'</p>';
-//
-//         $order->delete_meta_data('_send_on_hold');
-//         $order->save();
-//     }
-// }
 ?>
