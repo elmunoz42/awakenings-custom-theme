@@ -14,6 +14,7 @@
  * @package WooCommerce/Templates/Emails
  * @version 3.5.0
  */
+//NOTE - CMK updated this manually to match 3.7.0 see $additional_content area
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -103,6 +104,14 @@ do_action( 'woocommerce_email_order_meta', $order, $sent_to_admin, $plain_text, 
  */
 do_action( 'woocommerce_email_customer_details', $order, $sent_to_admin, $plain_text, $email );
 
+
+//NOTE: CMK ADDED THIS TO UPDATE TEMPLATE TO 3.7.0
+/**
+ * Show user-defined additional content - this is set in each email's settings.
+ */
+if ( $additional_content ) {
+	echo wp_kses_post( wpautop( wptexturize( $additional_content ) ) );
+}
 ?>
 <p>
 

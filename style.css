@@ -60,16 +60,15 @@ Template: enfold
 }
 }
 
-
 /* Sliders */
 
-.page-id-23734 #full_slider_1{
+.home #full_slider_1{
 	max-width: 1100px;
 	margin: 0 auto;
 }
 
 /* Slider background */
-.page-id-23734 #main {
+.home #main {
 		background-color: #2d2c2c;
 }
 
@@ -174,6 +173,14 @@ Template: enfold
 	margin-bottom: 20px;
 }
 
+/* .cmk-event-details {
+	display: hide;
+}
+
+.page-id-10589 .cmk-event-details {
+	display: inline;
+	font-size: 0.5em;
+} */
 /************************************* Attendee Event Confirmation List *************************************/
 
 .tribe-tickets li {
