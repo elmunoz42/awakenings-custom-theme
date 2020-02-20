@@ -112,11 +112,6 @@ do_action( 'woocommerce_email_customer_details', $order, $sent_to_admin, $plain_
 if ( $additional_content ) {
 	echo wp_kses_post( wpautop( wptexturize( $additional_content ) ) );
 }
-?>
-<p>
-
-</p>
-<?php
 
 /**
  * Executes the email footer.

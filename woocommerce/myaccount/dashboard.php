@@ -16,6 +16,7 @@
  * @package     WooCommerce/Templates
  * @version     2.6.0
  */
+// NOTE CMK updated on 2-10-2020 to 2.6.0
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly
@@ -26,13 +27,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 <?php
 	/* translators: 1: user display name 2: logout url */
 	printf(
-		__( '', 'woocommerce' ),
-		'<strong>' . esc_html( $current_user->display_name ) . '</strong>',
-		esc_url( wc_logout_url( wc_get_page_permalink( 'myaccount' ) ) )
+		__( '%1$s', 'woocommerce' ),
+		'<strong>' . esc_html( $current_user->display_name ) . ',</strong>',
+		esc_url( wc_logout_url() )
 	);
 ?>
 
-<p><?php
+<p><strong><?php
 	printf(
 		__( 'This is your account summary page. You can view your <a href="%1$s">receipts & invoices</a>, manage your <a href="%2$s">shipping and billing addresses</a>, <a href="%3$s"> check your appointments</a>, and <a href="%4$s">edit your password and account details</a>.', 'woocommerce' ),
 		esc_url( wc_get_endpoint_url( 'orders' ) ),
@@ -40,7 +41,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 		esc_url( wc_get_endpoint_url( 'appointments' ) ),
 		esc_url( wc_get_endpoint_url( 'edit-account' ) )
 	);
-?></p>
+?></strong></p>
 
 <div class="dashboard-products">
 	<div class="dashboard-my-tickets" s>

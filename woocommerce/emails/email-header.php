@@ -14,6 +14,7 @@
  * @package WooCommerce/Templates/Emails
  * @version 2.4.0
  */
+// NOTE CMK updated manually according to 4.0.0 on 2-19-2020
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly
