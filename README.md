@@ -10,29 +10,33 @@ AWC Admin Theme: This customizes the wp-admin styling to simplify backend for ce
 
 ### Main Third Party Plugins:
 
-Woocommerce and extensions:
+### IMPORTANT NOTE: PLUGINS HAVE BEEN "FROZEN" AT THEIR CURRENT VERSIONS DUE TO ALL THE INTEGRATIONS. THE NUMBER ONE PRIORITY IS TO GET THE WEBSITE FUNCTIONAL AND LAUNCHING. THE NUMBER TWO PRIORITY IS SEEING THAT THE PLUGINS CAN BE UPDATED AND FIX WHERE OVERRIDES CONFLICT WITH NEW PLUGIN VERSIONS. MODERN TRIBE's NEW EVENTS CALENDAR SEEMS TO BE QUITE DIFFERENT THAN THE CURRENT VERSION USE YOUR JUDGEMENT ON HOW TO PROCEED.
+
+#### Woocommerce and extensions:
+
 e-commerce functionality. 
 Please note that the Woo "Products" tab in the dashboard has been renamed to "Offerings". Note also that we were experimenting with the Product Vendor functionality, but its not necessary to meet the specs. If we are to use it each therapist would be a vendor of their own appointment product. 
 
-Woocommerce Appointments (This plugin is not from Automatic):
+#### Woocommerce Appointments (This plugin is not from Automatic):
+
 Appointment functionality that integrates with woocommerce.
 Each therapist should be their own appointment product. When a user goes to that product they can choose a time for their appointment. Therapists when logging into their dashboard can set their availability
 
-Buddypress:
+#### Buddypress:
 Utilized primarily for member page
 
-BBPress:
+#### BBPress:
 Forum for the Therapists and admins.
 
-Modern Tribe Events Calendar and extensions:
+#### Modern Tribe Events Calendar and extensions:
 Utilized mainly for booking the studio.
 
-Events Calendar integration with Woocommerce:
+#### Events Calendar integration with Woocommerce:
 The idea is that potential event hosts can submit a potential event to host at the Awakenings Studio. 
 The studio administrator from the /dashboard-administrator page see's the request, checks studio availability and creates an order in the woocommerce backend (links are in the dashboard). 
 The woocommerce order page has been customized so that a contract can be created with default (but customizable) language. If the event is part of a series all the instances of the event can have a woocommerce order automatically created for them. When you email the invoice the language will reflect all this with links to pay the deposit, remainder and installments for the different instances of the event. 
 
-Nextend Social Login:
+#### Nextend Social Login:
 Used for social login. 
 Currently the Facebook account is linked to Carlos' personal account. This should be switched over to an Awakenings account.
 We also want Google login functionality setup.
