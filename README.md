@@ -38,17 +38,26 @@ Currently the Facebook account is linked to Carlos' personal account. This shoul
 We also want Google login functionality setup.
 
 ### Other integrations
-rss.php
+
+#### rss.php
+
 Mailchimp is integrated with the custom rss.php feed allowing mailchimp to send an automated newsletter each month with upcoming events.
 
-functions.php
+#### functions.php
+
 Functionality that accomplishes tasks accross different plugins is located in the functions.php file. 
 
-template overrides
+#### template overrides
 A few templates have been overriden from various plugins.
 
-Front end dashboards
-Dashboards are created with regular wordpress pages. The if menu plugin displays the right dashboard to the right user. Also, certain users are redirected to their respective dashboard upon login. Customers and subscribers are not redirected to their dashboards because they might be logging in to RSVP to an event and we don't want to send them away from the task they were trying to accomplish.
+#### Front end dashboards
+Dashboards are created with regular wordpress pages. The if menu plugin displays the right dashboard to the right user role. Also, certain users are redirected to their respective dashboard upon login. Customers and subscribers are not redirected to their dashboards because they might be logging in to RSVP to an event and we don't want to send them away from the task they were trying to accomplish. Shortcodes from plugins are leveraged here BUT ALSO CUSTOM SHORTCODES that are in the functions.php file. 
+
+#### Testimonials Are a Custom Post Type
+in the client dashboard /dashboard-client/ there is a custom front end form to create a testimonial post.
+
+#### Articles front end form
+The therapists have a front end form they can use to create wordpress posts. They have access to this from their /dashboard-therapist/ page.
 
 ## General Functionality QA Specs
 
